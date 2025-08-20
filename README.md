@@ -1,156 +1,79 @@
 # UniData_V0
 a BNB-chain powered dataset marketplace where contributors can upload datasets, buyers purchase with tBNB, and contributors automatically earn royalties. Storage defaults to IPFS with optional BNB Greenfield for access-controlled storage. AI/ML workflows run in isolation and consume datasets via signed URLs.
+🚀 Overview
 
-1. Smart Contract Layer (BNB Testnet)
+The LLM Data Marketplace is a decentralized platform where contributors can upload datasets and earn royalties when buyers (AI startups, researchers, data owners) purchase them. Built with BNB Chain architecture in mind, the project integrates BNB Greenfield for decentralized storage and access control, making it possible to monetize datasets transparently.
 
- Dataset Registry:
+Think of it as GitHub + HuggingFace + App Store, but for datasets — with on-chain ownership + revenue share.
 
-Register datasets (owner, price, URI, license).
+✨ Key Features
 
-Store immutable reference (IPFS CID or Greenfield Object ID).
+Dataset Registry → Contributors upload datasets and register them on-chain.
 
- Purchasing Logic:
+Purchasing & Royalties → Buyers purchase with tBNB/ETH (local test). Contributors earn automatic royalties.
 
-Buyers pay in tBNB.
+BNB Greenfield Integration → Datasets stored in Greenfield buckets, with buyer-only access granted after purchase.
 
-Automatic royalty transfer to contributor.
+IPFS Fallback → If Greenfield SDK is unavailable, files fallback to IPFS.
 
- Access Control Support:
+Frontend dApp → Upload, browse, buy, and download datasets via wallet (Metamask).
 
-Record buyer entitlement (hasPurchased).
+AI/ML Integration → Purchased dataset consumed in HuggingFace pipeline for fine-tuning.
 
- Admin Controls:
+⚡ Hybrid Demo Strategy (Plan D)
 
-Activate/deactivate datasets.
+Contracts → Deployed locally (Hardhat) or on Sepolia (fallback). EVM-compatible, ready for BNB chain.
 
- Events:
+Storage → BNB Greenfield SDK (primary) with IPFS fallback.
 
-DatasetRegistered, Purchased, Activated.
+Backend → Thin Express service for contract event indexing + download entitlement validation.
 
- Deployment:
+Frontend → Next.js dApp for contributors and buyers.
 
-Verified contract on BNB Testnet (chainId 97).
+AI Layer → Runs offline; isolated from infra; consumes datasets via signed URL.
 
-Address + ABI committed in repo.
+🎥 Demo Flow
 
-2. Storage Layer
+Contributor uploads dataset → stored in Greenfield → registered on local chain.
 
- IPFS Integration (default):
+Buyer browses and purchases dataset.
 
-Upload via Web3.Storage / Pinata.
+Smart contract records purchase + royalties flow to contributor.
 
-Store CID on-chain.
+Backend validates buyer entitlement → grants Greenfield access.
 
- BNB Greenfield Adapter (stretch):
+Buyer downloads dataset.
 
-Upload dataset to Greenfield bucket.
+ML pipeline fine-tunes HuggingFace model on dataset → outputs results.
 
-Contract stores object URI.
+📖 Pitch Story
 
-Buyer purchase triggers Greenfield permission grant.
+Problem: AI startups spend $$$ for clean, copyright-safe datasets without clear provenance.
 
-3. Backend Layer (Node/Express)
+Solution: Marketplace with royalties + access-controlled BNB Greenfield storage.
 
- Event Indexer:
+USP: Transparent, copyright-proof, and monetizable open data.
 
-Listen to contract events, persist datasets & purchases.
+Vision: Long-term, the App Store for AI datasets — powered by BNB.
 
- APIs:
+🛠️ Tech Stack
 
-GET /datasets (list all).
+Smart Contracts → Solidity, Hardhat (Local/Sepolia, EVM-compatible for BNB).
 
-GET /datasets/:id (metadata).
+Storage → BNB Greenfield SDK + IPFS fallback.
 
-POST /datasets/:id/download (auth + signed URL).
+Backend → Node.js/Express, Prisma, ethers/viem.
 
- Wallet Auth:
+Frontend → Next.js + Wagmi + Metamask.
 
-Verify buyer via signed message.
+AI Layer → Python + HuggingFace.
 
-Check entitlement with hasPurchased.
+👥 Team Roles
 
- Signed URL Handling:
+Blockchain/Backend → Contracts, APIs, event indexer.
 
-Issue short-lived IPFS gateway links.
+Frontend → Next.js marketplace, wallet integration.
 
-(Stretch) Greenfield presigned reads.
+ML → HuggingFace pipeline + demo.
 
-4. Frontend Layer (Next.js)
-
- Dataset Upload:
-
-Form → Upload to storage → call registerDataset.
-
- Marketplace View:
-
-Browse/search datasets.
-
-Dataset detail page with license + price.
-
- Purchasing Flow:
-
-Buy with wallet → confirm on-chain.
-
- My Purchases:
-
-Show purchased datasets.
-
-Enable download via backend.
-
- Wallet Integration:
-
-Metamask → auto switch to BNB Testnet.
-
-5. AI/ML Layer (Isolated)
-
- Demo Pipeline:
-
-Download dataset via signed URL.
-
-Fine-tune a HuggingFace model (e.g., sentiment analysis).
-
- Offline Safety:
-
-ML never writes to contract/storage.
-
-Runs in separate repo/workspace.
-
- Backup Video:
-
-Record ML fine-tune demo for fallback.
-
-6. Hackathon Deliverables
-
- Live Demo:
-
-Upload → Buy → Royalty → Download → ML usage.
-
- Backup Paths:
-
-CLI purchase script + recorded video demo.
-
- Pitch Deck:
-
-Problem → Solution → Architecture → USP → Demo flow.
-
- README:
-
-Architecture diagram.
-
-Setup instructions.
-
-Contract address + ABI.
-
-.env.example.
-
-7. Stretch Goals
-
- Royalty % (basis points) + splits.
-
- NFT receipt for dataset purchase.
-
- Greenfield live integration.
-
- Dataset ratings/reviews.
-
- Analytics dashboard for contributors.
+Pitch/PM → Slides, storytelling, submission.

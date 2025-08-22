@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
 require("@typechain/hardhat");
@@ -10,10 +11,18 @@ module.exports = {
   solidity: {
     version: "0.8.20",
     settings: {
+      viaIR: true,
       optimizer: {
         enabled: true,
-        runs: 200
-      }
+        runs: 200,
+        details: {
+          yul: true,
+          deduplicate: true,
+          cse: true,
+          constantOptimizer: true
+        }
+      },
+      evmVersion: "london"
     }
   },
   networks: {

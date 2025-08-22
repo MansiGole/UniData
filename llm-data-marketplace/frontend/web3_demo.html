@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Data Marketplace - Web3 tBNB Integration</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .content {
+            padding: 30px;
+        }
+        .wallet-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        .dataset-section {
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e1e1e1;
+        }
+        .dataset-card {
+            border-left: 4px solid #667eea;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .network-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .balance {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .price {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #f39c12;
+        }
+        .address {
+            font-family: 'Courier New', monospace;
+            background: #f1f1f1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 LLM Data Marketplace</h1>
+            <p>Buy and Sell Datasets with tBNB on BNB Smart Chain Testnet</p>
+        </div>
+        
+        <div class="content">
+            <!-- Wallet Connection Section -->
+            <div class="wallet-section">
+                <h3>💰 Wallet Connection</h3>
+                <div id="walletStatus">
+                    <p>Connect your MetaMask wallet to start trading datasets with tBNB</p>
+                    <button class="btn" onclick="connectWallet()">Connect MetaMask</button>
+                </div>
+            </div>
+            
+            <!-- Status Messages -->
+            <div id="statusMessages"></div>
+            
+            <!-- Main Content Grid -->
+            <div class="grid">
+                <!-- Dataset Registration -->
+                <div class="card">
+                    <h3>📊 Register Dataset</h3>
+                    <div class="form-group">
+                        <label for="datasetTitle">Title</label>
+                        <input type="text" id="datasetTitle" class="form-control" placeholder="My Dataset">
+                    </div>
+                    <div class="form-group">
+                        <label for="datasetDesc">Description</label>
+                        <textarea id="datasetDesc" class="form-control" rows="3" placeholder="Dataset description..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="datasetPrice">Price (tBNB)</label>
+                        <input type="number" id="datasetPrice" class="form-control" step="0.001" placeholder="0.001">
+                    </div>
+                    <div class="form-group">
+                        <label for="storageURI">Storage URI</label>
+                        <input type="text" id="storageURI" class="form-control" placeholder="greenfield://bucket/object">
+                    </div>
+                    <button class="btn" onclick="registerDataset()" id="registerBtn">Register Dataset</button>
+                </div>
+                
+                <!-- Marketplace -->
+                <div class="card">
+                    <h3>🛒 Marketplace</h3>
+                    <button class="btn" onclick="loadMarketplace()">Load Datasets</button>
+                    <div id="marketplace"></div>
+                </div>
+            </div>
+            
+            <!-- Network Info -->
+            <div class="card">
+                <h3>⚡ Network Information</h3>
+                <div id="networkInfo">
+                    <button class="btn btn-warning" onclick="loadNetworkInfo()">Load Network Info</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Contract Configuration
+        const NETWORK_CONFIG = {
+            chainId: '0x61', // 97 in hex
+            chainName: 'BNB Smart Chain Testnet',
+            nativeCurrency: {
+                name: 'tBNB',
+                symbol: 'tBNB',
+                decimals: 18
+            },
+            rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+            blockExplorerUrls: ['https://testnet.bscscan.com/']
+        };
+        
+        const CONTRACT_ADDRESS = '0x4d9f46D3578FBF27B8e1dfC46a3d909bA0c41f54';
+        const API_BASE = 'http://127.0.0.1:8000/api/v1';
+        
+        // Simplified ABI for key functions
+        const CONTRACT_ABI = [
+            "function registerDataset(string _title, string _description, string _author, string _date, string _download_details, string _size, string _format, string _license, string _schema, string _sample_head, uint256 _feasibility_score, string _purchase_details, string _storageURI, uint256 _price)",
+            "function purchaseDataset(uint256 _id) payable",
+            "function getDataset(uint256 _id) view returns (uint256 id, string title, string description, string author, string date, string download_details, string size, string format, string license, string schema, string sample_head, uint256 feasibility_score, string purchase_details, address owner, uint256 price, bool active, string storageURI, uint256 createdAt, uint256 updatedAt)",
+            "function hasAddressPurchased(address _buyer, uint256 _id) view returns (bool)",
+            "function nextDatasetId() view returns (uint256)",
+            "event DatasetRegistered(uint256 indexed id, string title, address indexed owner, uint256 price, string storageURI)",
+            "event DatasetPurchased(uint256 indexed id, address indexed buyer, uint256 price, uint256 platformFee)"
+        ];
+        
+        let provider, signer, contract, userAccount;
+        
+        // Utility Functions
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('statusMessages');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => statusDiv.innerHTML = '', 5000);
+        }
+        
+        function formatAddress(address) {
+            return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        }
+        
+        function formatBalance(balance) {
+            return parseFloat(balance).toFixed(4);
+        }
+        
+        // Wallet Functions
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    showStatus('MetaMask is not installed. Please install MetaMask to continue.', 'error');
+                    return;
+                }
+                
+                // Request account access
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                
+                if (accounts.length === 0) {
+                    showStatus('No accounts found. Please unlock MetaMask.', 'error');
+                    return;
+                }
+                
+                // Switch to BNB testnet
+                await switchToBNBTestnet();
+                
+                // Set up provider and signer
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                userAccount = accounts[0];
+                
+                // Initialize contract
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                
+                // Get balance
+                const balance = await provider.getBalance(userAccount);
+                const balanceFormatted = ethers.utils.formatEther(balance);
+                
+                // Update UI
+                document.getElementById('walletStatus').innerHTML = `
+                    <div class="status success">
+                        <strong>Wallet Connected!</strong><br>
+                        <span class="address">${formatAddress(userAccount)}</span><br>
+                        <span class="balance">${formatBalance(balanceFormatted)} tBNB</span>
+                        <span class="network-badge">BNB Testnet</span>
+                    </div>
+                    <button class="btn btn-danger" onclick="disconnectWallet()">Disconnect</button>
+                `;
+                
+                showStatus('Wallet connected successfully!');
+                
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                showStatus(`Connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function switchToBNBTestnet() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: NETWORK_CONFIG.chainId }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [NETWORK_CONFIG]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+        
+        function disconnectWallet() {
+            provider = null;
+            signer = null;
+            contract = null;
+            userAccount = null;
+            
+            document.getElementById('walletStatus').innerHTML = `
+                <p>Connect your MetaMask wallet to start trading datasets with tBNB</p>
+                <button class="btn" onclick="connectWallet()">Connect MetaMask</button>
+            `;
+            
+            showStatus('Wallet disconnected');
+        }
+        
+        // Dataset Functions
+        async function registerDataset() {
+            try {
+                if (!contract) {
+                    showStatus('Please connect your wallet first', 'error');
+                    return;
+                }
+                
+                const title = document.getElementById('datasetTitle').value;
+                const description = document.getElementById('datasetDesc').value;
+                const price = document.getElementById('datasetPrice').value;
+                const storageURI = document.getElementById('storageURI').value;
+                
+                if (!title || !description || !price || !storageURI) {
+                    showStatus('Please fill in all fields', 'error');
+                    return;
+                }
+                
+                const priceInWei = ethers.utils.parseEther(price);
+                
+                document.getElementById('registerBtn').innerHTML = '<span class="loading"></span> Registering...';
+                document.getElementById('registerBtn').disabled = true;
+                
+                showStatus('Sending transaction to blockchain...', 'warning');
+                
+                const tx = await contract.registerDataset(
+                    title,
+                    description,
+                    'Anonymous', // author
+                    new Date().toISOString(), // date
+                    '', // download_details
+                    'Unknown', // size
+                    'CSV', // format
+                    'MIT', // license
+                    '', // schema
+                    '', // sample_head
+                    85, // feasibility_score
+                    '', // purchase_details
+                    storageURI,
+                    priceInWei
+                );
+                
+                showStatus(`Transaction sent: ${tx.hash}`, 'warning');
+                
+                const receipt = await tx.wait();
+                
+                // Extract dataset ID from events
+                const event = receipt.events?.find(e => e.event === 'DatasetRegistered');
+                const datasetId = event?.args?.id?.toNumber();
+                
+                showStatus(`Dataset registered successfully! ID: ${datasetId}`, 'success');
+                
+                // Clear form
+                document.getElementById('datasetTitle').value = '';
+                document.getElementById('datasetDesc').value = '';
+                document.getElementById('datasetPrice').value = '';
+                document.getElementById('storageURI').value = '';
+                
+            } catch (error) {
+                console.error('Error registering dataset:', error);
+                showStatus(`Registration failed: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('registerBtn').innerHTML = 'Register Dataset';
+                document.getElementById('registerBtn').disabled = false;
+            }
+        }
+        
+        async function purchaseDataset(datasetId, price) {
+            try {
+                if (!contract) {
+                    showStatus('Please connect your wallet first', 'error');
+                    return;
+                }
+                
+                const priceInWei = ethers.utils.parseEther(price.toString());
+                
+                showStatus('Sending purchase transaction...', 'warning');
+                
+                const tx = await contract.purchaseDataset(datasetId, {
+                    value: priceInWei
+                });
+                
+                showStatus(`Purchase transaction sent: ${tx.hash}`, 'warning');
+                
+                const receipt = await tx.wait();
+                
+                showStatus(`Purchase successful! You can now download the dataset.`, 'success');
+                loadMarketplace(); // Refresh marketplace
+                
+            } catch (error) {
+                console.error('Error purchasing dataset:', error);
+                showStatus(`Purchase failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadMarketplace() {
+            try {
+                showStatus('Loading marketplace...', 'warning');
+                
+                const response = await fetch(`${API_BASE}/web3/marketplace`);
+                const data = await response.json();
+                
+                const marketplaceDiv = document.getElementById('marketplace');
+                
+                if (data.datasets.length === 0) {
+                    marketplaceDiv.innerHTML = '<p>No datasets available</p>';
+                    return;
+                }
+                
+                let html = `<h4>Available Datasets (${data.total_datasets})</h4>`;
+                
+                for (const dataset of data.datasets) {
+                    const hasPurchased = userAccount ? await checkPurchaseStatus(userAccount, dataset.id) : false;
+                    
+                    html += `
+                        <div class="dataset-card card">
+                            <h5>${dataset.title}</h5>
+                            <p>${dataset.description}</p>
+                            <p><strong>Author:</strong> ${dataset.author}</p>
+                            <p><strong>Owner:</strong> <span class="address">${formatAddress(dataset.owner)}</span></p>
+                            <p class="price">Price: ${dataset.price} tBNB</p>
+                            ${hasPurchased ? 
+                                '<button class="btn btn-success" disabled>✅ Purchased</button>' :
+                                `<button class="btn" onclick="purchaseDataset(${dataset.id}, ${dataset.price})">Buy Dataset</button>`
+                            }
+                        </div>
+                    `;
+                }
+                
+                marketplaceDiv.innerHTML = html;
+                showStatus('Marketplace loaded successfully');
+                
+            } catch (error) {
+                console.error('Error loading marketplace:', error);
+                showStatus(`Failed to load marketplace: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkPurchaseStatus(address, datasetId) {
+            try {
+                if (!contract) return false;
+                return await contract.hasAddressPurchased(address, datasetId);
+            } catch (error) {
+                console.error('Error checking purchase status:', error);
+                return false;
+            }
+        }
+        
+        async function loadNetworkInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/web3/network`);
+                const data = await response.json();
+                
+                document.getElementById('networkInfo').innerHTML = `
+                    <div class="status success">
+                        <strong>Network:</strong> ${data.network}<br>
+                        <strong>Chain ID:</strong> ${data.chain_id}<br>
+                        <strong>Latest Block:</strong> ${data.latest_block}<br>
+                        <strong>Contract Address:</strong> <span class="address">${data.contract_address}</span><br>
+                        <strong>Connected:</strong> ${data.connected ? '✅' : '❌'}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading network info:', error);
+                showStatus(`Failed to load network info: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-check wallet connection on page load
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined' && window.ethereum.selectedAddress) {
+                await connectWallet();
+            }
+            await loadNetworkInfo();
+        });
+        
+        // Listen for account changes
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    disconnectWallet();
+                } else {
+                    connectWallet();
+                }
+            });
+            
+            window.ethereum.on('chainChanged', () => {
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>

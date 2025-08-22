@@ -1,0 +1,21 @@
+{
+  "name": "greenfield-test",
+  "version": "1.0.0",
+  "description": "BNB Greenfield integration tests",
+  "main": "test_greenfield_standalone.js",
+  "scripts": {
+    "test": "node test_greenfield_standalone.js",
+    "install-sdk": "npm install @bnb-chain/greenfield-js-sdk"
+  },
+  "dependencies": {
+    "@bnb-chain/greenfield-js-sdk": "^1.2.4"
+  },
+  "keywords": [
+    "bnb",
+    "greenfield",
+    "storage",
+    "test"
+  ],
+  "author": "LLM Data Marketplace",
+  "license": "MIT"
+}

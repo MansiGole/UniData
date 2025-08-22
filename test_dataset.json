@@ -1,0 +1,8 @@
+{
+  "id": 1,
+  "title": "Sample Dataset", 
+  "description": "A test dataset for demo",
+  "price": 10.5,
+  "file_url": "https://example.com/dataset.csv",
+  "owner": "0x1234567890123456789012345678901234567890"
+}

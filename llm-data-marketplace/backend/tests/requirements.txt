@@ -1,0 +1,7 @@
+# Test dependencies for Greenfield integration
+pytest>=7.0.0
+requests>=2.28.0
+
+# Optional: For advanced testing
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0

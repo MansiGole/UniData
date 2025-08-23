@@ -1,0 +1,12 @@
+[
+    {"id": 1, "text": "I love this product! It's amazing and works perfectly.", "sentiment": "positive"},
+    {"id": 2, "text": "This is the worst purchase I've ever made. Completely useless.", "sentiment": "negative"},
+    {"id": 3, "text": "The product is okay, nothing special but does the job.", "sentiment": "neutral"},
+    {"id": 4, "text": "Fantastic quality and great customer service!", "sentiment": "positive"},
+    {"id": 5, "text": "Terrible experience, would not recommend to anyone.", "sentiment": "negative"},
+    {"id": 6, "text": "Average product, met my basic expectations.", "sentiment": "neutral"},
+    {"id": 7, "text": "Outstanding performance and excellent value for money!", "sentiment": "positive"},
+    {"id": 8, "text": "Completely disappointed with this purchase.", "sentiment": "negative"},
+    {"id": 9, "text": "It's an adequate solution for the price point.", "sentiment": "neutral"},
+    {"id": 10, "text": "Exceptional quality, exceeded all my expectations!", "sentiment": "positive"}
+]

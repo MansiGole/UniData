@@ -1,0 +1,20 @@
+{
+  "network": "tBNB Testnet",
+  "chainId": 97,
+  "deployer": "0x9ed8454F21BE1Ec34cd17e6C6abdF9CD8EE2C6b9",
+  "timestamp": "2025-08-22T18:39:31.558Z",
+  "contracts": {
+    "datasetMarket": {
+      "address": "0xC31653D4aB73911013Aa1b03b7B40E7ca352052E",
+      "deploymentHash": "0x70cd13b52eb77e89cbb8a266a45db6411e054f613fd9f859d637bc287471e400",
+      "gasUsed": "2305325",
+      "blockNumber": 62730702
+    },
+    "modelMarket": {
+      "address": "0x4089950735Ff54Cbc9dF53dF2F3e2BDaa4b4cC73",
+      "deploymentHash": "0xcfe3fe96afcae2fa307fa8cbeabd5cd3b09c07ce187b3c6b331c2e88f9bbd8d1",
+      "gasUsed": "1739854",
+      "blockNumber": 62730710
+    }
+  }
+}

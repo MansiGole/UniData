@@ -1,0 +1,13 @@
+{
+  "dataset_name": "Test Dataset",
+  "samples": [
+    {"id": 1, "text": "This is a positive review", "sentiment": "positive"},
+    {"id": 2, "text": "This is a negative review", "sentiment": "negative"},
+    {"id": 3, "text": "This is a neutral review", "sentiment": "neutral"}
+  ],
+  "metadata": {
+    "total_samples": 3,
+    "categories": ["positive", "negative", "neutral"],
+    "created_date": "2024-01-01"
+  }
+}

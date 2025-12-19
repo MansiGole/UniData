@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
 from pathlib import Path
+import os
 
 from app.api.api_v1.api import router as api_router
 
@@ -18,6 +19,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Create static and templates directories if they don't exist
+static_dir = Path("static")
+templates_dir = Path("templates")
+static_dir.mkdir(exist_ok=True)
+templates_dir.mkdir(exist_ok=True)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

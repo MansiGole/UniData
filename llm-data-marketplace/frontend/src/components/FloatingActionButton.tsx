@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plus, Upload, Database, Brain } from 'lucide-react';
+import { Plus, Database, Brain } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 

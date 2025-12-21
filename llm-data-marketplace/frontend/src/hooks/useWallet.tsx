@@ -46,7 +46,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [signer, setSigner] = useState<ethers.Signer | null>(null)
   const [balance, setBalance] = useState<string | null>(null)
   const [networkInfo, setNetworkInfo] = useState<any>(null)
-  const [accounts, setAccounts] = useState<string[]>([UPLOADER_ACCOUNT, BUYER_ACCOUNT])
+  const [accounts] = useState<string[]>([UPLOADER_ACCOUNT, BUYER_ACCOUNT])
 
   // Auto-connect with uploader account on mount
   useEffect(() => {

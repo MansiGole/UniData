@@ -1,4 +1,4 @@
-from web3 import Web3
+# Mock blockchain service for demo purposes
 import json
 import os
 from typing import Optional
@@ -6,18 +6,72 @@ import requests
 
 class BlockchainService:
     def __init__(self):
-        # BNB Testnet Configuration - Use alternative RPC for better compatibility
-        self.rpc_url = "https://bsc-testnet.nodereal.io/v1/e9a36765eb8a40b9bd12e680a1fd2bc5"
+        # Mock configuration for demo
+        self.rpc_url = "https://bsc-testnet.nodereal.io/v1/mock"
         self.chain_id = 97
-        
-        try:
-            self.web3 = Web3(Web3.HTTPProvider(self.rpc_url))
-            # Test connection
-            self.web3.eth.block_number
-        except Exception as e:
-            print(f"Primary RPC failed, trying backup: {e}")
-            # Backup RPC
-            self.rpc_url = "https://data-seed-prebsc-2-s1.binance.org:8545/"
+
+        # Mock web3 object
+        self.web3 = MockWeb3()
+
+    def get_contract(self, address, abi):
+        return MockContract()
+
+    def get_account_balance(self, address):
+        # Mock balance
+        return 1000000000000000000  # 1 BNB in wei
+
+    def send_transaction(self, tx):
+        # Mock transaction
+        return {"hash": "0x" + "0" * 64, "status": "success"}
+
+    def wait_for_transaction(self, tx_hash):
+        # Mock wait
+        return {"status": "success"}
+
+class MockWeb3:
+    def __init__(self):
+        self.eth = MockEth()
+
+class MockEth:
+    def __init__(self):
+        self.block_number = 12345678
+
+class MockContract:
+    def __init__(self):
+        pass
+
+    def functions(self):
+        return MockFunctions()
+
+class MockFunctions:
+    def __init__(self):
+        pass
+
+    def registerDataset(self):
+        return MockFunction()
+
+    def purchaseDataset(self):
+        return MockFunction()
+
+    def getDataset(self):
+        return MockFunction()
+
+    def hasAddressPurchased(self):
+        return MockFunction()
+
+class MockFunction:
+    def __init__(self):
+        pass
+
+    def call(self, *args, **kwargs):
+        # Mock responses
+        return True
+
+    def transact(self, *args, **kwargs):
+        return "0x" + "0" * 64
+
+# Create service instance
+blockchain_service = BlockchainService()
             self.web3 = Web3(Web3.HTTPProvider(self.rpc_url))
         
         # Contract addresses from deployment

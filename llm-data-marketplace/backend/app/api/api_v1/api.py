@@ -5,17 +5,306 @@ from pydantic import BaseModel
 import json
 import time
 import uuid
-from ...services.blockchain_service import blockchain_service
-from ...services.simple_blockchain_service import simple_blockchain_service
+from ...services.blockchain_service_mock import blockchain_service
+from ...services.simple_blockchain_service_mock import simple_blockchain_service
 
 router = APIRouter()
 security = HTTPBearer()
 
 # In-memory storage for demo purposes
-DATASETS = []
-MODELS = []
-USERS = {}
-PURCHASES = []
+DATASETS = [
+    {
+        "id": 1,
+        "title": "Financial Sentiment Analysis Dataset",
+        "description": "A comprehensive dataset of financial news articles with sentiment labels for training ML models. Contains 50,000+ labeled articles from major financial publications covering stocks, commodities, and market trends.",
+        "price": 0.5,
+        "file_url": "ipfs://QmX9fJ3kN5mL8pR2sT4vW6yB8dF1gH3jK5lN7pQ9sU2wX4",
+        "owner": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        "active": True,
+        "author": "Financial Data Corp",
+        "date": "2024-01-15",
+        "download_details": "CSV format with sentiment scores (-1 to 1)",
+        "size": "250MB",
+        "format": "CSV",
+        "license": "MIT",
+        "schema": "text, sentiment_score, date, source",
+        "sample_head": "Apple stock rises 5% on earnings beat,-0.8,2024-01-15,Bloomberg",
+        "feasibility_score": 92,
+        "purchase_details": "Includes preprocessing scripts and data validation",
+        "storageURI": "ipfs://QmX9fJ3kN5mL8pR2sT4vW6yB8dF1gH3jK5lN7pQ9sU2wX4",
+        "createdAt": 1705276800,
+        "updatedAt": 1705276800
+    },
+    {
+        "id": 2,
+        "title": "E-commerce Customer Behavior Dataset",
+        "description": "Detailed customer behavior data from a major e-commerce platform including clickstreams, purchase history, and demographic information. Perfect for recommendation system training.",
+        "price": 0.8,
+        "file_url": "ipfs://QmY2bG4iN6oP8rS5tU7vW9xZ1cV3bN5mL7kJ9hG1fD3aS5",
+        "owner": "0x8f2d45Bb7745C0633926a4b844Cc564e5439f55f",
+        "active": True,
+        "author": "E-commerce Analytics Inc",
+        "date": "2024-02-01",
+        "download_details": "JSON format with nested user sessions",
+        "size": "1.2GB",
+        "format": "JSON",
+        "license": "CC BY-SA 4.0",
+        "schema": "user_id, session_data, purchases, demographics",
+        "sample_head": '{"user_id": "12345", "sessions": [...], "total_purchases": 15}',
+        "feasibility_score": 88,
+        "purchase_details": "Anonymized data with privacy guarantees",
+        "storageURI": "ipfs://QmY2bG4iN6oP8rS5tU7vW9xZ1cV3bN5mL7kJ9hG1fD3aS5",
+        "createdAt": 1706745600,
+        "updatedAt": 1706745600
+    },
+    {
+        "id": 3,
+        "title": "Medical Imaging Dataset - Chest X-Rays",
+        "description": "Annotated chest X-ray images for pneumonia detection. Contains 10,000+ images with expert radiologist annotations. Ideal for computer vision model training.",
+        "price": 1.2,
+        "file_url": "ipfs://QmZ3cH5jM7nP9qR4tV6wX8yA2dF4gH6jK8lN0pQ2sU4wY6",
+        "owner": "0x9g3e56Dd8856D0744937b5b844Dd675e6540g66g",
+        "active": True,
+        "author": "Medical AI Research Lab",
+        "date": "2024-01-20",
+        "download_details": "DICOM images with annotation masks",
+        "size": "15GB",
+        "format": "DICOM",
+        "license": "Research Use Only",
+        "schema": "image_path, diagnosis, confidence_score, annotations",
+        "sample_head": "chest_xray_0001.dcm,Pneumonia,0.95,mask_data...",
+        "feasibility_score": 95,
+        "purchase_details": "Requires IRB approval for medical research",
+        "storageURI": "ipfs://QmZ3cH5jM7nP9qR4tV6wX8yA2dF4gH6jK8lN0pQ2sU4wY6",
+        "createdAt": 1705718400,
+        "updatedAt": 1705718400
+    },
+    {
+        "id": 4,
+        "title": "Climate Change Impact Dataset",
+        "description": "Global climate data including temperature, precipitation, and CO2 levels from 1950-2023. Multi-source dataset for environmental ML models.",
+        "price": 0.3,
+        "file_url": "ipfs://QmA4dG6iO8qS0tU2vW4xY6zB2dF4gH6jK8lN0pQ2sU4wY6",
+        "owner": "0x1h4f67Ee9967E0855948c6b844Ee786e7651h77h",
+        "active": True,
+        "author": "Global Climate Research Institute",
+        "date": "2024-02-10",
+        "download_details": "Time-series CSV with multiple variables",
+        "size": "500MB",
+        "format": "CSV",
+        "license": "Open Data Commons",
+        "schema": "date, temperature, precipitation, co2_level, location",
+        "sample_head": "2023-12-01,15.2,45.6,420.5,New York",
+        "feasibility_score": 90,
+        "purchase_details": "Includes data quality documentation",
+        "storageURI": "ipfs://QmA4dG6iO8qS0tU2vW4xY6zB2dF4gH6jK8lN0pQ2sU4wY6",
+        "createdAt": 1707523200,
+        "updatedAt": 1707523200
+    },
+    {
+        "id": 5,
+        "title": "Social Media Sentiment Dataset",
+        "description": "1 million+ tweets and social media posts with sentiment analysis labels. Covers various topics including politics, entertainment, and consumer brands.",
+        "price": 0.6,
+        "file_url": "ipfs://QmB5eH7jN9pR1sT3uV5wX7yZ3cE5gI7kL9mO1qS3uV5wX7",
+        "owner": "0x2i5g78Ff0078F0966059d7b844Ff897f8762i88i",
+        "active": True,
+        "author": "Social Analytics Platform",
+        "date": "2024-01-25",
+        "download_details": "JSON format with metadata",
+        "size": "800MB",
+        "format": "JSON",
+        "license": "MIT",
+        "schema": "text, sentiment, topic, timestamp, platform",
+        "sample_head": '{"text": "Great product!", "sentiment": "positive", "topic": "consumer"}',
+        "feasibility_score": 87,
+        "purchase_details": "Filtered for toxicity and spam",
+        "storageURI": "ipfs://QmB5eH7jN9pR1sT3uV5wX7yZ3cE5gI7kL9mO1qS3uV5wX7",
+        "createdAt": 1706140800,
+        "updatedAt": 1706140800
+    }
+]
+
+MODELS = [
+    {
+        "id": 1,
+        "name": "Financial Sentiment Analyzer v2.1",
+        "description": "Advanced BERT-based model for financial sentiment analysis. Achieves 94% accuracy on financial news classification.",
+        "owner": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        "framework": "PyTorch",
+        "accuracy": 0.94,
+        "tags": ["finance", "sentiment", "BERT", "classification"],
+        "file_url": "ipfs://QmC6fI8kO0qS2tU4vW6xY8zA4dF6gH8jK0lN2pQ4sU6wY8",
+        "price": 0.8,
+        "f1_score": 0.93,
+        "precision": 0.95,
+        "recall": 0.91,
+        "model_type": "Transformer",
+        "license": "MIT",
+        "dataset_used": "Financial Sentiment Analysis Dataset",
+        "training_time": "48 hours",
+        "model_size": "450MB"
+    },
+    {
+        "id": 2,
+        "name": "E-commerce Recommendation Engine",
+        "description": "Collaborative filtering model for product recommendations. Uses matrix factorization with neural network enhancements.",
+        "owner": "0x8f2d45Bb7745C0633926a4b844Cc564e5439f55f",
+        "framework": "TensorFlow",
+        "accuracy": 0.89,
+        "tags": ["recommendation", "e-commerce", "collaborative-filtering"],
+        "file_url": "ipfs://QmD7gJ9lP1rS3tU5vW7xY9zB5dF7gH9jK1lN3pQ5sU7wY9",
+        "price": 1.0,
+        "f1_score": 0.87,
+        "precision": 0.90,
+        "recall": 0.84,
+        "model_type": "Neural Network",
+        "license": "Apache 2.0",
+        "dataset_used": "E-commerce Customer Behavior Dataset",
+        "training_time": "72 hours",
+        "model_size": "2.1GB"
+    },
+    {
+        "id": 3,
+        "name": "Chest X-Ray Pneumonia Detector",
+        "description": "CNN-based model for pneumonia detection in chest X-rays. ResNet50 architecture with transfer learning.",
+        "owner": "0x9g3e56Dd8856D0744937b5b844Dd675e6540g66g",
+        "framework": "PyTorch",
+        "accuracy": 0.96,
+        "tags": ["medical", "computer-vision", "CNN", "healthcare"],
+        "file_url": "ipfs://QmE8hK0mQ2sT4uV6wX8yZ0cE6gI8kL2mO4qS6uV8wY0aB",
+        "price": 1.5,
+        "f1_score": 0.95,
+        "precision": 0.97,
+        "recall": 0.93,
+        "model_type": "Convolutional Neural Network",
+        "license": "Research Use Only",
+        "dataset_used": "Medical Imaging Dataset - Chest X-Rays",
+        "training_time": "120 hours",
+        "model_size": "1.8GB"
+    },
+    {
+        "id": 4,
+        "name": "Climate Change Predictor",
+        "description": "LSTM-based time series model for climate pattern prediction. Forecasts temperature and precipitation trends.",
+        "owner": "0x1h4f67Ee9967E0855948c6b844Ee786e7651h77h",
+        "framework": "Keras",
+        "accuracy": 0.91,
+        "tags": ["climate", "time-series", "LSTM", "forecasting"],
+        "file_url": "ipfs://QmF9iL1nR3sT5uV7wX9yZ1cF7gI9kL3mO5qS7uV9wY1bC",
+        "price": 0.7,
+        "f1_score": 0.89,
+        "precision": 0.92,
+        "recall": 0.86,
+        "model_type": "Recurrent Neural Network",
+        "license": "Open Data Commons",
+        "dataset_used": "Climate Change Impact Dataset",
+        "training_time": "36 hours",
+        "model_size": "320MB"
+    },
+    {
+        "id": 5,
+        "name": "Social Media Sentiment Classifier",
+        "description": "Multi-class sentiment analysis model using RoBERTa. Classifies social media posts into positive, negative, and neutral categories.",
+        "owner": "0x2i5g78Ff0078F0966059d7b844Ff897f8762i88i",
+        "framework": "HuggingFace Transformers",
+        "accuracy": 0.92,
+        "tags": ["sentiment", "social-media", "RoBERTa", "NLP"],
+        "file_url": "ipfs://QmG0jM2oR4sT6uV8wX0yZ2cG8gI0kL4mO6qS8uV0wY2cD",
+        "price": 0.9,
+        "f1_score": 0.91,
+        "precision": 0.93,
+        "recall": 0.89,
+        "model_type": "Transformer",
+        "license": "MIT",
+        "dataset_used": "Social Media Sentiment Dataset",
+        "training_time": "60 hours",
+        "model_size": "1.2GB"
+    },
+    {
+        "id": 6,
+        "name": "Text Summarization Model",
+        "description": "BART-based abstractive text summarization model. Generates concise summaries from long documents.",
+        "owner": "0x3j6h89Gg1189G1077160e8b844Gg908g9873j99j",
+        "framework": "PyTorch",
+        "accuracy": 0.88,
+        "tags": ["summarization", "NLP", "BART", "text-generation"],
+        "file_url": "ipfs://QmH1kN3pS5tU7vW9xY1zC3dF9gI1kL5mO7qS9uV1wY3dE",
+        "price": 1.1,
+        "f1_score": 0.86,
+        "precision": 0.89,
+        "recall": 0.83,
+        "model_type": "Transformer",
+        "license": "Apache 2.0",
+        "dataset_used": "News Articles Dataset",
+        "training_time": "96 hours",
+        "model_size": "2.5GB"
+    }
+]
+
+USERS = {
+    "0x742d35Cc6634C0532925a3b844Bc454e4438f44e": {
+        "username": "financial_data_corp",
+        "email": "contact@financialdatacorp.com",
+        "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        "balance": 5.0
+    },
+    "0x8f2d45Bb7745C0633926a4b844Cc564e5439f55f": {
+        "username": "ecommerce_analytics",
+        "email": "data@ecommerce-analytics.com",
+        "wallet_address": "0x8f2d45Bb7745C0633926a4b844Cc564e5439f55f",
+        "balance": 3.2
+    },
+    "0x9g3e56Dd8856D0744937b5b844Dd675e6540g66g": {
+        "username": "medical_ai_lab",
+        "email": "research@medicalai-lab.org",
+        "wallet_address": "0x9g3e56Dd8856D0744937b5b844Dd675e6540g66g",
+        "balance": 8.1
+    },
+    "0x1h4f67Ee9967E0855948c6b844Ee786e7651h77h": {
+        "username": "climate_research",
+        "email": "data@climate-research.org",
+        "wallet_address": "0x1h4f67Ee9967E0855948c6b844Ee786e7651h77h",
+        "balance": 2.5
+    },
+    "0x2i5g78Ff0078F0966059d7b844Ff897f8762i88i": {
+        "username": "social_analytics",
+        "email": "platform@social-analytics.com",
+        "wallet_address": "0x2i5g78Ff0078F0966059d7b844Ff897f8762i88i",
+        "balance": 4.7
+    }
+}
+
+PURCHASES = [
+    {
+        "id": 1,
+        "user_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        "item_type": "dataset",
+        "item_id": 2,
+        "price": 0.8,
+        "transaction_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        "timestamp": 1706745600
+    },
+    {
+        "id": 2,
+        "user_address": "0x8f2d45Bb7745C0633926a4b844Cc564e5439f55f",
+        "item_type": "model",
+        "item_id": 1,
+        "price": 0.8,
+        "transaction_hash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+        "timestamp": 1706832000
+    },
+    {
+        "id": 3,
+        "user_address": "0x9g3e56Dd8856D0744937b5b844Dd675e6540g66g",
+        "item_type": "dataset",
+        "item_id": 4,
+        "price": 0.3,
+        "transaction_hash": "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456",
+        "timestamp": 1707523200
+    }
+]
+
 TOKENS = {}  # Simple token storage
 
 class Dataset(BaseModel):

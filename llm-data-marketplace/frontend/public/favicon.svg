@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Outer circle representing blockchain/network -->
+  <circle cx="16" cy="16" r="15" fill="#F0B90B" stroke="#1f2937" stroke-width="1"/>
+  <!-- Inner data visualization elements -->
+  <rect x="10" y="12" width="12" height="1.5" fill="#1f2937"/>
+  <rect x="10" y="15" width="9" height="1.5" fill="#1f2937"/>
+  <rect x="10" y="18" width="6" height="1.5" fill="#1f2937"/>
+  <!-- Central data point -->
+  <circle cx="16" cy="16" r="2" fill="#1f2937"/>
+  <!-- Connecting lines representing data flow -->
+  <line x1="16" y1="6" x2="16" y2="10" stroke="#1f2937" stroke-width="1"/>
+  <line x1="26" y1="16" x2="22" y2="16" stroke="#1f2937" stroke-width="1"/>
+  <line x1="16" y1="26" x2="16" y2="22" stroke="#1f2937" stroke-width="1"/>
+  <line x1="6" y1="16" x2="10" y2="16" stroke="#1f2937" stroke-width="1"/>
+</svg>

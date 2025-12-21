@@ -12,7 +12,6 @@ import {
   FileText, 
   Calendar,
   User,
-  Tag,
   BarChart3,
   CheckCircle,
   AlertCircle,
@@ -139,13 +138,13 @@ export const DatasetDetailPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {dataset.category && (
+                {dataset.author && (
                   <div className="flex items-center space-x-3">
                     <BarChart3 className="h-5 w-5 text-primary" />
                     <div>
-                      <div className="font-semibold">Category</div>
+                      <div className="font-semibold">Author</div>
                       <div className="text-muted-foreground">
-                        {dataset.category}
+                        {dataset.author}
                       </div>
                     </div>
                   </div>
@@ -192,7 +191,7 @@ export const DatasetDetailPage: React.FC = () => {
                   <div>
                     <div className="font-semibold">Created</div>
                     <div className="text-muted-foreground">
-                      {new Date(dataset.created_at * 1000).toLocaleDateString()}
+                      {new Date(dataset.createdAt * 1000).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -209,30 +208,6 @@ export const DatasetDetailPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Tags */}
-          {dataset.tags && dataset.tags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Tag className="h-5 w-5" />
-                  <span>Tags</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {dataset.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Feasibility Score */}
           {feasibilityData && feasibilityData.feasibility_analysis && (
@@ -430,15 +405,15 @@ export const DatasetDetailPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Dataset Category */}
-          {dataset.category && (
+          {/* Dataset Author */}
+          {dataset.author && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Category</CardTitle>
+                <CardTitle className="text-lg">Author</CardTitle>
               </CardHeader>
               <CardContent>
                 <span className="px-3 py-2 bg-primary/10 text-primary rounded-md text-sm font-medium">
-                  {dataset.category}
+                  {dataset.author}
                 </span>
               </CardContent>
             </Card>
@@ -463,7 +438,7 @@ export const DatasetDetailPage: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Created</span>
                 <span className="text-sm">
-                  {new Date(dataset.created_at * 1000).toLocaleDateString()}
+                  {new Date(dataset.createdAt * 1000).toLocaleDateString()}
                 </span>
               </div>
             </CardContent>

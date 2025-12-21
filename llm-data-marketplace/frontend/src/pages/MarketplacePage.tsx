@@ -183,23 +183,23 @@ export const MarketplacePage: React.FC = () => {
                 </div>
 
                 {/* Feasibility Score */}
-                {dataset.feasibility_analysis && (
+                {dataset.feasibility_score && (
                   <div className="mb-4">
                     <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                      dataset.feasibility_analysis.score >= 80 ? 'bg-green-100 text-green-600' :
-                      dataset.feasibility_analysis.score >= 60 ? 'bg-yellow-100 text-yellow-600' :
+                      dataset.feasibility_score >= 80 ? 'bg-green-100 text-green-600' :
+                      dataset.feasibility_score >= 60 ? 'bg-yellow-100 text-yellow-600' :
                       'bg-red-100 text-red-600'
                     }`}>
-                      Quality Score: {dataset.feasibility_analysis.score}/100 ({dataset.feasibility_analysis.grade})
+                      Quality Score: {dataset.feasibility_score}/100
                     </div>
                   </div>
                 )}
 
-                {/* Category Badge */}
-                {dataset.category && (
+                {/* Author Badge */}
+                {dataset.author && (
                   <div className="mb-4">
                     <span className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">
-                      {dataset.category}
+                      {dataset.author}
                     </span>
                   </div>
                 )}

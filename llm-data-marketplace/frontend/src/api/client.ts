@@ -8,26 +8,21 @@ export interface Dataset {
   description: string
   price: number
   file_url: string
-  category: string
-  format: string
-  size: string
-  license: string
-  tags: string[]
-  source: string
-  collection_method: string
   owner: string
   active: boolean
-  created_at: number
-  updated_at: number
-  downloads: number
-  rating: number
-  feasibility_analysis?: {
-    score: number
-    grade: string
-    strengths: string[]
-    issues: string[]
-    recommended_use_cases: string[]
-  }
+  author: string
+  date: string
+  download_details: string
+  size: string
+  format: string
+  license: string
+  schema: string
+  sample_head: string
+  feasibility_score: number
+  purchase_details: string
+  storageURI: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Model {

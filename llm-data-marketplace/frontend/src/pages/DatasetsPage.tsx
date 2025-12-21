@@ -17,14 +17,14 @@ export const DatasetsPage: React.FC = () => {
                          dataset.description.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesCategory = selectedCategory === 'all' || 
-                           dataset.category === selectedCategory
+                           dataset.author === selectedCategory
 
     return matchesSearch && matchesCategory
   }) || []
 
-  // Get unique categories
+  // Get unique authors
   const categories = ['all', ...Array.from(new Set(
-    datasets?.map(d => d.category).filter(Boolean) || []
+    datasets?.map(d => d.author).filter(Boolean) || []
   ))]
 
   if (error) {
@@ -157,10 +157,10 @@ export const DatasetsPage: React.FC = () => {
               <CardContent>
                 {/* Metadata */}
                 <div className="space-y-2 mb-4">
-                  {dataset.category && (
+                  {dataset.author && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Category:</span>
-                      <span className="font-medium">{dataset.category}</span>
+                      <span className="text-muted-foreground">Author:</span>
+                      <span className="font-medium">{dataset.author}</span>
                     </div>
                   )}
                   
@@ -185,25 +185,6 @@ export const DatasetsPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Tags */}
-                {dataset.tags && dataset.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {dataset.tags.slice(0, 3).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-md"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {dataset.tags.length > 3 && (
-                      <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-md">
-                        +{dataset.tags.length - 3} more
-                      </span>
-                    )}
-                  </div>
-                )}
 
                 {/* Actions */}
                 <div className="flex items-center justify-between">

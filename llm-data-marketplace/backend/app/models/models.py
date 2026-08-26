@@ -14,6 +14,7 @@ class Dataset(Base):
     active = Column(Boolean, default=True)
     storage_uri = Column(String)
     dtype = Column(String)  # "dataset" or "model"
+    blockchain_dataset_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

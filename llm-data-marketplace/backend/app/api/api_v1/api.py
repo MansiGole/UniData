@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, File, UploadFile, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import json
 import time
 import uuid
@@ -9,7 +9,7 @@ from ...services.blockchain_service_mock import blockchain_service
 from ...services.simple_blockchain_service_mock import simple_blockchain_service
 
 router = APIRouter()
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # In-memory storage for demo purposes
 DATASETS = [
@@ -341,6 +341,48 @@ async def get_model_feasibility(model_id: int):
         }
     }
     return {"success": True, "data": feasibility}
+
+@router.get("/datasets/{dataset_id}/feasibility")
+async def get_dataset_feasibility(dataset_id: int):
+    """Return feasibility analysis for a given dataset."""
+    dataset = next((d for d in DATASETS if d["id"] == dataset_id), None)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    feasibility_score = dataset.get("feasibility_score", 90)
+    analysis = dataset.get("feasibility_analysis", {
+        "score": feasibility_score,
+        "grade": "A+" if feasibility_score >= 90 else ("A" if feasibility_score >= 80 else "B"),
+        "data_quality": 9.0,
+        "commercial_viability": 8.5,
+        "technical_feasibility": 9.0,
+        "strengths": [
+            "Clean data structure and schema",
+            "High completeness with low null ratios"
+        ],
+        "issues": [
+            "Sample size could be increased for higher statistical confidence"
+        ],
+        "recommendations": [
+            "Include updated tag metadata"
+        ]
+    })
+    
+    feasibility = {
+        "dataset_id": dataset_id,
+        "dataset_title": dataset.get("title", f"Dataset #{dataset_id}"),
+        "feasible": True,
+        "score": feasibility_score / 100.0 if feasibility_score > 1 else feasibility_score,
+        "grade": analysis.get("grade", "A"),
+        "reason": "Dataset meets size, format, and completeness requirements.",
+        "feasibility_analysis": analysis
+    }
+    return {
+        "success": True, 
+        "data": feasibility, 
+        "dataset_title": dataset.get("title"), 
+        "feasibility_analysis": analysis
+    }
     owner: str
     framework: str
     accuracy: float
@@ -389,8 +431,13 @@ class Web3PurchaseRequest(BaseModel):
     buyer_address: str
     transaction_hash: str
 
+class BlockchainSyncRequest(BaseModel):
+    blockchain_dataset_id: Optional[int] = Field(None, gt=0)
+    contract_address: Optional[str] = None
+
 class BlockchainDataset(BaseModel):
     id: int
+    blockchain_dataset_id: Optional[int] = None
     title: str
     description: str
     author: str
@@ -507,6 +554,83 @@ async def delete_dataset(dataset_id: int, current_user: str = Depends(get_curren
             return {"success": True, "message": "Dataset deleted successfully"}
     raise HTTPException(status_code=404, detail="Dataset not found")
 
+@router.patch("/datasets/{database_dataset_id}/blockchain-sync")
+async def sync_dataset_blockchain(
+    database_dataset_id: int, 
+    request: BlockchainSyncRequest,
+    current_user: Optional[str] = Depends(get_current_user_optional)
+):
+    """Associate database dataset with on-chain blockchain dataset ID."""
+    dataset = next((d for d in DATASETS if d["id"] == database_dataset_id), None)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found in database")
+    
+    # 1. Ownership/authorization check if owner address is present
+    if current_user and dataset.get("owner") and dataset.get("owner") not in ["demo_user", "blockchain_user"]:
+        if dataset["owner"].lower() != current_user.lower():
+            raise HTTPException(status_code=403, detail="Not authorized to update this dataset mapping")
+
+    target_bc_id = request.blockchain_dataset_id
+
+    # 2. Overwrite Protection: Prevent silently replacing an existing active mapping with a different ID
+    existing_bc_id = dataset.get("blockchain_dataset_id")
+    if existing_bc_id is not None and target_bc_id is not None and existing_bc_id != target_bc_id:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Dataset {database_dataset_id} already has a blockchain mapping (ID {existing_bc_id})"
+        )
+
+    # 3. Duplicate Mapping Check & 4. On-Chain Existence Verification (when target_bc_id is non-null)
+    if target_bc_id is not None:
+        # Check duplicate mapping in memory
+        duplicate = next(
+            (d for d in DATASETS if d["id"] != database_dataset_id and d.get("blockchain_dataset_id") == target_bc_id),
+            None
+        )
+        if duplicate:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Blockchain dataset ID {target_bc_id} is already mapped to database dataset {duplicate['id']}"
+            )
+
+        # On-Chain Existence Verification via Read-Only RPC
+        try:
+            from ...services.blockchain_service import Web3BlockchainService
+            web3_svc = Web3BlockchainService()
+            onchain_data = web3_svc.get_dataset_from_blockchain(target_bc_id)
+            if not onchain_data or not onchain_data.get("active", False) or onchain_data.get("id") == 0:
+                raise HTTPException(status_code=400, detail=f"Blockchain dataset ID {target_bc_id} does not exist or is inactive on-chain")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Failed to verify blockchain dataset ID {target_bc_id} on-chain: {str(e)}"
+            )
+
+    dataset["blockchain_dataset_id"] = target_bc_id
+    if request.contract_address:
+        dataset["contract_address"] = request.contract_address
+
+    # Sync with SQLite DB if dataset exists in SQLite DB
+    try:
+        from ...db.database import SessionLocal
+        from ...models.models import Dataset as DBDataset
+        db = SessionLocal()
+        db_ds = db.query(DBDataset).filter(DBDataset.id == database_dataset_id).first()
+        if db_ds:
+            db_ds.blockchain_dataset_id = target_bc_id
+            db.commit()
+        db.close()
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "data": dataset,
+        "message": f"Database dataset {database_dataset_id} successfully mapped to blockchain dataset {target_bc_id}"
+    }
+
 @router.post("/datasets/upload")
 async def upload_dataset(
     file: UploadFile = File(...),
@@ -620,11 +744,18 @@ async def create_purchase(item_type: str, item_id: int, current_user: str = Depe
         raise HTTPException(status_code=404, detail="Item not found")
     
     user = USERS.get(current_user)
-    if not user or user.balance < item["price"]:
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+    
+    user_balance = user["balance"] if isinstance(user, dict) else user.balance
+    if user_balance < item["price"]:
         raise HTTPException(status_code=400, detail="Insufficient balance")
     
     # Process purchase
-    user.balance -= item["price"]
+    if isinstance(user, dict):
+        user["balance"] -= item["price"]
+    else:
+        user.balance -= item["price"]
     
     purchase = Purchase(
         id=purchase_id,
@@ -671,6 +802,32 @@ async def verify_purchase(item_type: str, item_id: int, current_user: str = Depe
                     and p["item_id"] == item_id), None)
     
     return {"success": True, "verified": purchase is not None, "purchase": purchase}
+
+@router.get("/marketplace/check-purchase/{item_type}/{item_id}")
+async def check_purchase_status(
+    item_type: str, 
+    item_id: int, 
+    current_user: Optional[str] = Depends(get_current_user_optional)
+):
+    """Check purchase status for frontend item pages"""
+    if not current_user:
+        return {"success": True, "purchased": False}
+    
+    purchase = next((p for p in PURCHASES 
+                    if p["user_address"] == current_user 
+                    and p["item_type"] == item_type 
+                    and p["item_id"] == item_id), None)
+    
+    if purchase:
+        return {
+            "success": True,
+            "purchased": True,
+            "purchase_date": purchase.get("timestamp"),
+            "download_url": f"/api/v1/download/{item_type}/{item_id}",
+            "purchase": purchase
+        }
+    
+    return {"success": True, "purchased": False}
 
 # Marketplace
 @router.post("/marketplace/purchase/dataset/{dataset_id}")
@@ -728,8 +885,10 @@ async def debug_info():
 async def connect_wallet(wallet_address: str):
     """Connect wallet and return user data (legacy endpoint)"""
     if wallet_address not in USERS:
-        USERS[wallet_address] = User(wallet_address=wallet_address)
-    return {"status": "connected", "wallet_address": wallet_address, "balance": USERS[wallet_address].balance}
+        USERS[wallet_address] = {"wallet_address": wallet_address, "balance": 1000.0}
+    user = USERS[wallet_address]
+    balance = user["balance"] if isinstance(user, dict) else user.balance
+    return {"status": "connected", "wallet_address": wallet_address, "balance": balance}
 
 @router.post("/purchase/{dataset_id}")
 async def purchase_dataset_legacy(dataset_id: int, data: Dict[str, str]):
@@ -743,11 +902,15 @@ async def purchase_dataset_legacy(dataset_id: int, data: Dict[str, str]):
         raise HTTPException(status_code=404, detail="Dataset not found")
     
     user = USERS[wallet_address]
-    if user.balance < dataset["price"]:
+    user_balance = user["balance"] if isinstance(user, dict) else user.balance
+    if user_balance < dataset["price"]:
         raise HTTPException(status_code=400, detail="Insufficient balance")
     
     # Process payment
-    user.balance -= dataset["price"]
+    if isinstance(user, dict):
+        user["balance"] -= dataset["price"]
+    else:
+        user.balance -= dataset["price"]
     
     # Add to purchases
     purchase_id = len(PURCHASES) + 1
@@ -1034,13 +1197,16 @@ async def connect_web3_wallet(wallet_address: str):
         
         # Add to users if not exists
         if wallet_address not in USERS:
-            USERS[wallet_address] = User(
-                wallet_address=wallet_address,
-                balance=balance_info["balance"]
-            )
+            USERS[wallet_address] = {
+                "wallet_address": wallet_address,
+                "balance": balance_info["balance"]
+            }
         else:
             # Update balance
-            USERS[wallet_address].balance = balance_info["balance"]
+            if isinstance(USERS[wallet_address], dict):
+                USERS[wallet_address]["balance"] = balance_info["balance"]
+            else:
+                USERS[wallet_address].balance = balance_info["balance"]
         
         return {
             "status": "connected",

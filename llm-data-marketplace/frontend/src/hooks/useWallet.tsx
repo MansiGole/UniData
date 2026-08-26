@@ -77,6 +77,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const token = `mock_token_${walletAddress}`
       apiClient.setAuthToken(token)
       console.log('Authenticated with backend:', walletAddress)
+      
+      // Fetch user balance from backend connect wallet API
+      const response = await apiClient.connectWallet(walletAddress)
+      if (response && response.balance !== undefined) {
+        setBalance(response.balance.toString())
+      }
     } catch (error) {
       console.error('Failed to authenticate with backend:', error)
     }

@@ -1,18 +1,12 @@
 import { useState } from 'react'
 import { ethers } from 'ethers'
 import { useWallet } from './useWallet'
-import { useCreatePurchase } from './useApi'
-import { Dataset } from '../api/client'
-
-const DATASET_MARKET_ABI = [
-  "function purchaseDataset(uint256 tokenId) external payable",
-  "function getDatasetPrice(uint256 tokenId) external view returns (uint256)",
-  "function ownerOf(uint256 tokenId) external view returns (address)",
-  "event DatasetPurchased(uint256 indexed tokenId, address indexed buyer, uint256 price)"
-]
+import { Dataset, apiClient } from '../api/client'
+// @ts-ignore
+import { CONTRACT_ADDRESSES, DATASET_MARKET_ABI } from '../../web3/contracts'
 
 // Contract address from deployment
-const DATASET_MARKET_ADDRESS = "0xC31653D4aB73911013Aa1b03b7B40E7ca352052E"
+const DATASET_MARKET_ADDRESS = CONTRACT_ADDRESSES.DATASET_MARKET
 
 interface PurchaseResult {
   success: boolean
@@ -22,16 +16,26 @@ interface PurchaseResult {
 
 export const usePurchase = () => {
   const [isPurchasing, setIsPurchasing] = useState(false)
-  const { signer, isConnected } = useWallet()
-  const createPurchaseMutation = useCreatePurchase()
+  const { signer, isConnected, account } = useWallet()
 
   const purchaseDataset = async (dataset: Dataset): Promise<PurchaseResult> => {
-    if (!isConnected || !signer) {
+    if (!isConnected || !signer || !signer.provider) {
       return { success: false, error: 'Wallet not connected' }
+    }
+
+    const targetOnChainId = dataset.blockchain_dataset_id
+    if (!targetOnChainId || targetOnChainId <= 0) {
+      return { success: false, error: 'Dataset does not have a valid on-chain blockchain mapping' }
     }
 
     try {
       setIsPurchasing(true)
+
+      // Verify network Chain ID = 97
+      const network = await signer.provider.getNetwork()
+      if (Number(network.chainId) !== 97) {
+        return { success: false, error: 'Please switch your wallet network to BNB Smart Chain Testnet (Chain ID 97)' }
+      }
 
       // Create contract instance
       const contract = new ethers.Contract(
@@ -40,28 +44,33 @@ export const usePurchase = () => {
         signer
       )
 
-      // Convert price to wei (dataset price is in ETH/tBNB)
-      const priceInWei = ethers.parseEther(dataset.price.toString())
+      // Fetch on-chain dataset details to get exact price
+      const onchainDataset = await contract.getDataset(targetOnChainId)
+      const onchainPrice = onchainDataset.price
 
-      // Execute purchase transaction
-      const tx = await contract.purchaseDataset(dataset.id, {
-        value: priceInWei,
-        gasLimit: 300000, // Set reasonable gas limit
+      // Estimate gas with buffer
+      const gasEstimate = await contract.purchaseDataset.estimateGas(targetOnChainId, {
+        value: onchainPrice,
+      })
+      const gasLimit = (gasEstimate * 110n) / 100n
+
+      // Execute purchase transaction on BSC Testnet
+      const tx = await contract.purchaseDataset(targetOnChainId, {
+        value: onchainPrice,
+        gasLimit: gasLimit,
       })
 
-      // Wait for transaction confirmation
+      // Wait for transaction confirmation receipt
       const receipt = await tx.wait()
 
-      if (receipt.status === 1) {
+      if (receipt && receipt.status === 1) {
         // Record purchase in backend
         try {
-          await createPurchaseMutation.mutateAsync({
-            type: 'dataset',
-            id: dataset.id,
-          })
+          const userAddress = account || (await signer.getAddress())
+          await apiClient.purchaseDatasetBlockchain(dataset.id, userAddress, receipt.hash)
         } catch (backendError) {
           console.warn('Failed to record purchase in backend:', backendError)
-          // Don't fail the entire purchase if backend fails
+          // Do not fail the blockchain purchase if backend sync fails
         }
 
         return {
@@ -71,7 +80,7 @@ export const usePurchase = () => {
       } else {
         return {
           success: false,
-          error: 'Transaction failed',
+          error: 'Transaction failed or was reverted on-chain',
         }
       }
     } catch (error: any) {
@@ -82,9 +91,13 @@ export const usePurchase = () => {
       if (error.code === 'ACTION_REJECTED') {
         errorMessage = 'Transaction was rejected by user'
       } else if (error.code === 'INSUFFICIENT_FUNDS') {
-        errorMessage = 'Insufficient funds for purchase'
-      } else if (error.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient tBNB balance'
+        errorMessage = 'Insufficient tBNB balance for purchase'
+      } else if (error.message && error.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient tBNB balance for purchase'
+      } else if (error.message && error.message.includes('Dataset is not active')) {
+        errorMessage = 'Dataset is not active on-chain'
+      } else if (error.message && error.message.includes('Already purchased')) {
+        errorMessage = 'You have already purchased this dataset on-chain'
       } else if (error.message) {
         errorMessage = error.message
       }
@@ -116,9 +129,29 @@ export const usePurchase = () => {
     }
   }
 
+  const checkHasPurchased = async (blockchainDatasetId: number): Promise<boolean> => {
+    if (!signer || !blockchainDatasetId) return false
+    try {
+      const userAddress = account || (await signer.getAddress())
+      if (!userAddress) return false
+
+      const contract = new ethers.Contract(
+        DATASET_MARKET_ADDRESS,
+        DATASET_MARKET_ABI,
+        signer
+      )
+
+      return await contract.hasAddressPurchased(userAddress, blockchainDatasetId)
+    } catch (error) {
+      console.error('Failed to check on-chain purchase status:', error)
+      return false
+    }
+  }
+
   return {
     purchaseDataset,
     getDatasetPrice,
+    checkHasPurchased,
     isPurchasing,
   }
 }

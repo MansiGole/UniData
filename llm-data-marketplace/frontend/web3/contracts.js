@@ -16,8 +16,8 @@ export const NETWORK_CONFIG = {
 
 // Contract Addresses (from deployment)
 export const CONTRACT_ADDRESSES = {
-  DATASET_MARKET: '0x4d9f46D3578FBF27B8e1dfC46a3d909bA0c41f54',
-  MODEL_MARKET: '0x9da6677a8AE28B0F4451A15D9B415ab06D3D2f36'
+  DATASET_MARKET: '0x4Ccd91247B98df05dCF18aBd70F27367DFcd9da4',
+  MODEL_MARKET: '0xDCA206BFBDc59FA423757e35cB55B18Bebe301A4'
 };
 
 // Dataset Market ABI (Updated to match current contract)
@@ -127,7 +127,7 @@ export const DATASET_MARKET_ABI = [
   }
 ];
 
-// Web3 Service Class
+// Web3 Service Class - Updated for Ethers v6
 export class Web3Service {
   constructor() {
     this.provider = null;
@@ -160,9 +160,9 @@ export class Web3Service {
       // Switch to BNB testnet if needed
       await this.switchToBNBTestnet();
 
-      // Set up provider and signer
-      this.provider = new ethers.providers.Web3Provider(window.ethereum);
-      this.signer = this.provider.getSigner();
+      // Set up provider and signer for Ethers v6
+      this.provider = new ethers.BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
       this.account = accounts[0];
 
       // Initialize contract
@@ -209,7 +209,7 @@ export class Web3Service {
     }
 
     const balance = await this.provider.getBalance(this.account);
-    return ethers.utils.formatEther(balance);
+    return ethers.formatEther(balance);
   }
 
   // Register a new dataset on the blockchain
@@ -219,7 +219,7 @@ export class Web3Service {
     }
 
     try {
-      const priceInWei = ethers.utils.parseEther(datasetData.price.toString());
+      const priceInWei = ethers.parseEther(datasetData.price.toString());
       
       const tx = await this.contract.registerDataset(
         datasetData.title,
@@ -240,13 +240,13 @@ export class Web3Service {
 
       const receipt = await tx.wait();
       
-      // Extract dataset ID from events
-      const event = receipt.events?.find(e => e.event === 'DatasetRegistered');
-      const datasetId = event?.args?.id?.toNumber();
+      // Extract dataset ID from events in Ethers v6
+      const event = receipt.logs?.find(log => log.fragment && log.fragment.name === 'DatasetRegistered');
+      const datasetId = event?.args?.id ? Number(event.args.id) : null;
 
       return {
         success: true,
-        transactionHash: receipt.transactionHash,
+        transactionHash: receipt.hash,
         datasetId: datasetId,
         gasUsed: receipt.gasUsed.toString()
       };
@@ -273,13 +273,13 @@ export class Web3Service {
         throw new Error('You have already purchased this dataset');
       }
 
-      // Estimate gas
-      const gasEstimate = await this.contract.estimateGas.purchaseDataset(datasetId, {
+      // Estimate gas in Ethers v6
+      const gasEstimate = await this.contract.purchaseDataset.estimateGas(datasetId, {
         value: price
       });
 
-      // Add 10% buffer to gas estimate
-      const gasLimit = gasEstimate.mul(110).div(100);
+      // Add 10% buffer to gas estimate using BigInt math
+      const gasLimit = (gasEstimate * 110n) / 100n;
 
       // Execute purchase
       const tx = await this.contract.purchaseDataset(datasetId, {
@@ -291,8 +291,8 @@ export class Web3Service {
 
       return {
         success: true,
-        transactionHash: receipt.transactionHash,
-        price: ethers.utils.formatEther(price),
+        transactionHash: receipt.hash,
+        price: ethers.formatEther(price),
         gasUsed: receipt.gasUsed.toString()
       };
     } catch (error) {
@@ -311,7 +311,7 @@ export class Web3Service {
       const dataset = await this.contract.getDataset(datasetId);
       
       return {
-        id: dataset.id.toNumber(),
+        id: Number(dataset.id),
         title: dataset.title,
         description: dataset.description,
         author: dataset.author,
@@ -324,14 +324,14 @@ export class Web3Service {
         },
         schema: dataset.schema,
         sample_head: dataset.sample_head,
-        feasibility_score: dataset.feasibility_score.toNumber(),
+        feasibility_score: Number(dataset.feasibility_score),
         purchase_details: dataset.purchase_details,
         owner: dataset.owner,
-        price: ethers.utils.formatEther(dataset.price),
+        price: ethers.formatEther(dataset.price),
         active: dataset.active,
         storageURI: dataset.storageURI,
-        createdAt: new Date(dataset.createdAt.toNumber() * 1000).toISOString(),
-        updatedAt: new Date(dataset.updatedAt.toNumber() * 1000).toISOString()
+        createdAt: new Date(Number(dataset.createdAt) * 1000).toISOString(),
+        updatedAt: new Date(Number(dataset.updatedAt) * 1000).toISOString()
       };
     } catch (error) {
       console.error('Error fetching dataset from blockchain:', error);
@@ -361,7 +361,7 @@ export class Web3Service {
 
     try {
       const nextId = await this.contract.nextDatasetId();
-      return nextId.toNumber();
+      return Number(nextId);
     } catch (error) {
       console.error('Error getting next dataset ID:', error);
       throw error;

@@ -10,8 +10,8 @@ class SimpleBlockchainService:
         self.explorer_api = "https://api-testnet.bscscan.com/api"
         
         # Contract addresses from deployment
-        self.dataset_market_address = "0x4d9f46D3578FBF27B8e1dfC46a3d909bA0c41f54"
-        self.model_market_address = "0x9da6677a8AE28B0F4451A15D9B415ab06D3D2f36"
+        self.dataset_market_address = "0x4Ccd91247B98df05dCF18aBd70F27367DFcd9da4"
+        self.model_market_address = "0xDCA206BFBDc59FA423757e35cB55B18Bebe301A4"
     
     def get_balance_via_rpc(self, address: str) -> dict:
         """Get tBNB balance using direct RPC call"""

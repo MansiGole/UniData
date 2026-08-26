@@ -1,0 +1,9 @@
+{
+  "network": "bnb_testnet",
+  "deployer": "0xCcfA277C946b8527DFF6d6A20e285A0E3401ADDe",
+  "timestamp": "2026-08-26T09:15:24.379Z",
+  "contracts": {
+    "datasetMarket": "0x4Ccd91247B98df05dCF18aBd70F27367DFcd9da4",
+    "modelMarket": "0xDCA206BFBDc59FA423757e35cB55B18Bebe301A4"
+  }
+}

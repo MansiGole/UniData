@@ -392,6 +392,8 @@ export const DatasetDetailPage: React.FC = () => {
                     itemId={dataset.id}
                     price={dataset.price}
                     itemTitle={dataset.title}
+                    blockchainDatasetId={dataset.blockchain_dataset_id}
+                    datasetObj={dataset}
                     className="w-full"
                   />
                   

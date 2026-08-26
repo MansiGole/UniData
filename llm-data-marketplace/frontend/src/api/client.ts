@@ -21,6 +21,7 @@ export interface Dataset {
   feasibility_score: number
   purchase_details: string
   storageURI: string
+  blockchain_dataset_id?: number | null
   createdAt: number
   updatedAt: number
 }

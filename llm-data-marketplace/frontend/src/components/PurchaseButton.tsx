@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { useCreatePurchase, usePurchaseStatus, useDownloadDataset, useDownloadModel } from '../hooks/useApi'
+import { usePurchase } from '../hooks/usePurchase'
+import { Dataset } from '../api/client'
 import { Download, ShoppingCart, CheckCircle, AlertCircle, CreditCard } from 'lucide-react'
 
 interface PurchaseButtonProps {
@@ -10,6 +12,8 @@ interface PurchaseButtonProps {
   itemTitle: string
   price: number
   userBalance?: number
+  blockchainDatasetId?: number | null
+  datasetObj?: Dataset
   className?: string
 }
 
@@ -19,21 +23,57 @@ const PurchaseButton: React.FC<PurchaseButtonProps> = ({
   itemTitle,
   price,
   userBalance = 0,
+  blockchainDatasetId,
+  datasetObj,
   className = ''
 }) => {
   const [showConfirm, setShowConfirm] = useState(false)
+  const [onChainPurchased, setOnChainPurchased] = useState(false)
   
   // Hooks
   const { data: purchaseStatus, isLoading: statusLoading } = usePurchaseStatus(type, itemId)
   const createPurchase = useCreatePurchase()
   const downloadDataset = useDownloadDataset()
   const downloadModel = useDownloadModel()
+  const { purchaseDataset: purchaseDatasetBlockchain, checkHasPurchased, isPurchasing: isPurchasingBlockchain } = usePurchase()
+
+  const isBlockchainItem = type === 'dataset' && blockchainDatasetId != null && blockchainDatasetId > 0
   
+  useEffect(() => {
+    if (isBlockchainItem && blockchainDatasetId) {
+      checkHasPurchased(blockchainDatasetId).then((purchased) => {
+        if (purchased) {
+          setOnChainPurchased(true)
+        }
+      })
+    }
+  }, [isBlockchainItem, blockchainDatasetId])
+
   // Check if already purchased
-  const isPurchased = purchaseStatus?.purchased || false
+  const isPurchased = (purchaseStatus?.purchased || false) || onChainPurchased
   const canAfford = userBalance >= price
-  
+
   const handlePurchase = async () => {
+    if (isBlockchainItem && datasetObj) {
+      try {
+        const res = await purchaseDatasetBlockchain({
+          ...datasetObj,
+          blockchain_dataset_id: blockchainDatasetId
+        })
+        setShowConfirm(false)
+        if (res.success) {
+          setOnChainPurchased(true)
+          alert(`Successfully purchased ${itemTitle} on BSC Testnet!\nTx Hash: ${res.transactionHash}`)
+        } else {
+          alert(`On-chain purchase error: ${res.error}`)
+        }
+      } catch (error: any) {
+        console.error('Blockchain purchase failed:', error)
+        alert(`Blockchain purchase error: ${error.message || 'Unknown error'}`)
+      }
+      return
+    }
+
     if (!canAfford) {
       alert(`Insufficient balance. Required: $${price.toFixed(2)}, Available: $${userBalance.toFixed(2)}`)
       return
@@ -98,12 +138,16 @@ const PurchaseButton: React.FC<PurchaseButtonProps> = ({
         <h4 className="font-semibold">Confirm Purchase</h4>
         <div className="text-sm text-gray-600">
           <p><strong>Item:</strong> {itemTitle}</p>
-          <p><strong>Price:</strong> ${price.toFixed(2)}</p>
-          <p><strong>Your Balance:</strong> ${userBalance.toFixed(2)}</p>
-          <p><strong>After Purchase:</strong> ${(userBalance - price).toFixed(2)}</p>
+          <p><strong>Price:</strong> {isBlockchainItem ? `${price} tBNB` : `$${price.toFixed(2)}`}</p>
+          {!isBlockchainItem && (
+            <>
+              <p><strong>Your Balance:</strong> ${userBalance.toFixed(2)}</p>
+              <p><strong>After Purchase:</strong> ${(userBalance - price).toFixed(2)}</p>
+            </>
+          )}
         </div>
         
-        {!canAfford && (
+        {!isBlockchainItem && !canAfford && (
           <div className="flex items-center gap-2 text-red-600 text-sm">
             <AlertCircle className="w-4 h-4" />
             Insufficient balance
@@ -113,16 +157,16 @@ const PurchaseButton: React.FC<PurchaseButtonProps> = ({
         <div className="flex gap-2">
           <Button
             onClick={handlePurchase}
-            disabled={!canAfford || createPurchase.isPending}
+            disabled={(!isBlockchainItem && !canAfford) || createPurchase.isPending || isPurchasingBlockchain}
             className="flex items-center gap-2"
           >
             <CreditCard className="w-4 h-4" />
-            {createPurchase.isPending ? 'Processing...' : 'Confirm Purchase'}
+            {createPurchase.isPending || isPurchasingBlockchain ? 'Processing...' : 'Confirm Purchase'}
           </Button>
           <Button
             variant="outline"
             onClick={() => setShowConfirm(false)}
-            disabled={createPurchase.isPending}
+            disabled={createPurchase.isPending || isPurchasingBlockchain}
           >
             Cancel
           </Button>
@@ -131,15 +175,23 @@ const PurchaseButton: React.FC<PurchaseButtonProps> = ({
     )
   }
   
+  const isButtonDisabled = isBlockchainItem ? false : !canAfford
+  const buttonVariant = (isBlockchainItem || canAfford) ? "default" : "secondary"
+  const buttonText = isBlockchainItem 
+    ? `Purchase ${price} tBNB` 
+    : canAfford 
+      ? `Purchase $${price.toFixed(2)}` 
+      : `Insufficient Balance ($${price.toFixed(2)})`
+
   return (
     <Button
       onClick={() => setShowConfirm(true)}
-      disabled={!canAfford}
+      disabled={isButtonDisabled}
       className={`flex items-center gap-2 ${className}`}
-      variant={canAfford ? "default" : "secondary"}
+      variant={buttonVariant}
     >
       <ShoppingCart className="w-4 h-4" />
-      {canAfford ? `Purchase $${price.toFixed(2)}` : `Insufficient Balance ($${price.toFixed(2)})`}
+      {buttonText}
     </Button>
   )
 }

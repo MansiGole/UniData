@@ -72,25 +72,40 @@ class MockFunction:
 
 # Create service instance
 blockchain_service = BlockchainService()
+
+
+class Web3BlockchainService:
+    def __init__(self, rpc_url=None):
+        self.rpc_url = rpc_url or os.getenv("BNB_TESTNET_RPC", "https://data-seed-prebsc-1-s1.binance.org:8545/")
+        self.chain_id = 97
+        
+        try:
+            from web3 import Web3
             self.web3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        except Exception as e:
+            print(f"Web3 provider initialization warning: {e}")
+            self.web3 = None
         
         # Contract addresses from deployment
-        self.dataset_market_address = "0x4d9f46D3578FBF27B8e1dfC46a3d909bA0c41f54"
-        self.model_market_address = "0x9da6677a8AE28B0F4451A15D9B415ab06D3D2f36"
+        self.dataset_market_address = "0x4Ccd91247B98df05dCF18aBd70F27367DFcd9da4"
+        self.model_market_address = "0xDCA206BFBDc59FA423757e35cB55B18Bebe301A4"
         
         # Load contract ABI
         self.dataset_market_abi = self._load_dataset_market_abi()
         
         # Initialize contract
         try:
-            self.dataset_contract = self.web3.eth.contract(
-                address=self.dataset_market_address,
-                abi=self.dataset_market_abi
-            )
+            if self.web3:
+                self.dataset_contract = self.web3.eth.contract(
+                    address=self.dataset_market_address,
+                    abi=self.dataset_market_abi
+                )
+            else:
+                self.dataset_contract = None
         except Exception as e:
             print(f"Contract initialization warning: {e}")
             self.dataset_contract = None
-        
+
     def _load_dataset_market_abi(self):
         """Load the Dataset Market contract ABI"""
         return [
@@ -223,7 +238,7 @@ blockchain_service = BlockchainService()
                 "feasibility_score": result[11],
                 "purchase_details": result[12],
                 "owner": result[13],
-                "price": float(self.web3.fromWei(result[14], 'ether')),
+                "price": float(self.web3.from_wei(result[14], 'ether')),
                 "active": result[15],
                 "storageURI": result[16],
                 "createdAt": result[17],

@@ -1,329 +1,500 @@
-UniData
+# UniData
 
-A blockchain-powered dataset marketplace where users can discover datasets, evaluate their feasibility, connect a Web3 wallet, purchase blockchain-backed datasets using tBNB on BNB Smart Chain Testnet, and receive verified access after purchase.
+> **A blockchain-powered dataset marketplace for discovering, evaluating, purchasing, and accessing datasets with verifiable ownership.**
 
-UniData combines a traditional dataset marketplace with blockchain-based purchase verification and backend entitlement management.
+UniData is a hybrid **Web2 + Web3 dataset marketplace** where users can discover datasets, evaluate their feasibility, connect a Web3 wallet, and purchase blockchain-backed datasets using **tBNB on the BNB Smart Chain Testnet**.
 
-Think of it as a marketplace for datasets with:
+The platform combines a traditional dataset marketplace with:
 
-Dataset discovery
-AI-powered feasibility analysis
-Web3 wallet integration
-On-chain dataset registration
-tBNB-based purchasing
-Blockchain purchase verification
-Backend purchase synchronization
-Purchase-based access control
-🚀 Overview
+* 📊 Dataset discovery and marketplace browsing
+* 🤖 AI-powered dataset feasibility analysis
+* 🦊 Web3 wallet integration
+* 🔗 On-chain dataset registration
+* 💰 tBNB-based dataset purchasing
+* ✅ Blockchain purchase verification
+* 🔄 Backend purchase synchronization
+* 🔐 Purchase-based access control
 
-UniData is a hybrid Web2 + Web3 dataset marketplace.
+---
 
-Users can browse datasets through the marketplace frontend. Blockchain-backed datasets are linked to records on the BNB Smart Chain Testnet and can be purchased through MetaMask using tBNB.
+## 🚀 Overview
 
-The blockchain is responsible for verifiable purchase and ownership state, while the backend maintains marketplace data, purchase records, and access authorization.
+UniData uses blockchain technology where it provides the most value: **payment, verification, and ownership state**.
 
-This architecture avoids storing large dataset files directly on the blockchain while using blockchain technology where it provides the most value: verification, payment, and ownership state.
+Users can browse datasets through the UniData marketplace frontend. Blockchain-backed datasets are linked to records on the **BNB Smart Chain Testnet** and can be purchased through **MetaMask** using tBNB.
 
-✨ Key Features
-📊 Dataset Marketplace
-Browse available datasets
-View dataset details
-View dataset status and metadata
-View dataset feasibility and quality information
-Purchase blockchain-backed datasets
-🤖 AI/ML Dataset Analysis
+The blockchain maintains an independently verifiable purchase state, while the backend manages:
 
-Datasets can display an AI-powered feasibility/readiness assessment.
+* Marketplace dataset records
+* Purchase records
+* Transaction synchronization
+* Entitlement verification
+* Access-control logic
+
+Large dataset files are **not stored directly on the blockchain**. This hybrid architecture keeps the system practical while using blockchain for verifiable ownership and payment.
+
+---
+
+# ✨ Key Features
+
+## 📊 Dataset Marketplace
+
+Users can:
+
+* Browse available datasets
+* View dataset details
+* View dataset metadata and status
+* Evaluate dataset feasibility
+* Review dataset quality information
+* Purchase blockchain-backed datasets
+
+---
+
+## 🤖 AI/ML Dataset Analysis
+
+UniData provides an AI-powered dataset feasibility/readiness assessment to help users understand whether a dataset is suitable for machine-learning workflows.
 
 The current interface demonstrates:
 
-Feasibility score
-Dataset grade
-Dataset strengths
-Dataset analysis information
+* **Feasibility Score**
+* **Dataset Grade**
+* **Dataset Strengths**
+* **Dataset Analysis Information**
 
-The AI/ML layer helps users understand whether a dataset is suitable for machine-learning workflows.
+The AI/ML layer is designed to help users make more informed decisions before purchasing a dataset.
 
-🔗 Blockchain Integration
+---
 
-Blockchain-backed datasets are registered against the DatasetMarket smart contract deployed on BNB Smart Chain Testnet.
+## 🔗 Blockchain Integration
 
-Current network:
+Blockchain-backed datasets are registered against the **DatasetMarket** smart contract deployed on the **BNB Smart Chain Testnet**.
 
-Network: BNB Smart Chain Testnet
-Chain ID: 97
-Currency: tBNB
-💰 Blockchain Purchase
+### Current Network
 
-A buyer can:
+| Property | Value                   |
+| -------- | ----------------------- |
+| Network  | BNB Smart Chain Testnet |
+| Chain ID | `97`                    |
+| Currency | tBNB                    |
 
-Connect MetaMask
-Open a blockchain-backed dataset
-Select Purchase
-Confirm the transaction in MetaMask
-Pay the dataset price in tBNB
-Wait for blockchain confirmation
-Synchronize the successful purchase with the backend
-Receive verified access
+---
 
-The current verified demonstration uses a dataset priced at:
+## 💰 Blockchain Purchase
 
+A typical blockchain-backed purchase follows this process:
+
+1. Connect MetaMask
+2. Open a blockchain-backed dataset
+3. Select **Purchase**
+4. Confirm the transaction in MetaMask
+5. Pay the dataset price in tBNB
+6. Wait for blockchain confirmation
+7. Synchronize the successful purchase with the backend
+8. Verify the purchase entitlement
+9. Receive authorized dataset access
+
+### Verified Demonstration Dataset Price
+
+```text
 0.001 tBNB
+```
 
-✅ On-Chain Purchase Verification
+---
 
-The frontend verifies ownership using the smart contract function:
+## ✅ On-Chain Purchase Verification
 
+The frontend verifies whether a wallet has already purchased a dataset using the smart contract function:
+
+```solidity
 hasAddressPurchased()
+```
 
-This allows the application to recognize an already-purchased dataset even after refreshing the page or reconnecting the wallet.
+This allows UniData to recognize an existing purchase even after:
 
-🔐 Backend Entitlement & Access Control
+* Page refresh
+* Wallet reconnection
+* Frontend state reset
 
-After a successful blockchain purchase, the backend records:
+The blockchain therefore acts as an independently verifiable source of purchase state.
 
-Dataset ID
-Buyer wallet address
-Transaction hash
-Purchase amount
-Purchase timestamp
+---
 
-The backend then verifies whether a wallet is entitled to access the dataset.
+# 🔐 Backend Entitlement & Access Control
 
-Unauthorized wallets are rejected.
+After a successful blockchain purchase, the backend records the relevant purchase information:
 
-🦊 Wallet Integration
+| Purchase Data      | Description                       |
+| ------------------ | --------------------------------- |
+| Dataset ID         | Purchased dataset identifier      |
+| Buyer Wallet       | Wallet address of the purchaser   |
+| Transaction Hash   | Blockchain transaction identifier |
+| Purchase Amount    | Amount paid in tBNB               |
+| Purchase Timestamp | Time of purchase                  |
+
+The backend then verifies whether the connected wallet is entitled to access the dataset.
+
+### Access Logic
+
+```text
+Wallet
+   │
+   ▼
+Has the wallet purchased the dataset?
+   │
+   ├── YES ──► Grant Access
+   │
+   └── NO ───► Reject Access
+```
+
+Both the blockchain purchase state and backend purchase records participate in the verified purchase workflow.
+
+---
+
+# 🦊 MetaMask Integration
 
 MetaMask is used for:
 
-Wallet connection
-Account detection
-BNB Smart Chain Testnet interaction
-Transaction signing
-tBNB payments
-🔄 End-to-End Purchase Flow
+* Wallet connection
+* Account detection
+* BNB Smart Chain Testnet interaction
+* Transaction signing
+* tBNB payments
+
+---
+
+# 🔄 End-to-End Purchase Flow
+
+```text
 User
-  ↓
+  │
+  ▼
 UniData Frontend
-  ↓
+  │
+  ▼
 Connect MetaMask
-  ↓
+  │
+  ▼
 Open Blockchain-backed Dataset
-  ↓
+  │
+  ▼
 Purchase Dataset
-  ↓
+  │
+  ▼
 MetaMask Transaction
-  ↓
+  │
+  ▼
 DatasetMarket Smart Contract
-  ↓
-BSC Testnet Confirmation
-  ↓
+  │
+  ▼
+BNB Smart Chain Testnet Confirmation
+  │
+  ▼
 Transaction Hash
-  ↓
+  │
+  ▼
 Backend Synchronization
-  ↓
+  │
+  ▼
 Purchase Record
-  ↓
+  │
+  ▼
 Entitlement Verification
-  ↓
+  │
+  ▼
 Authorized Dataset Access
+```
+
+### Separation of Responsibilities
 
 The blockchain transaction and backend purchase record are intentionally separated.
 
-The blockchain provides independently verifiable purchase state, while the backend provides marketplace records and access-control logic.
+**Blockchain provides:**
 
-🏗️ System Architecture
-                    ┌─────────────────────┐
-                    │        User         │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    React + Vite     │
-                    │   UniData Frontend  │
-                    └──────────┬──────────┘
-                               │
-                 ┌─────────────┴─────────────┐
-                 │                           │
-                 ▼                           ▼
-        ┌─────────────────┐        ┌─────────────────┐
-        │ FastAPI Backend │        │     MetaMask    │
-        └────────┬────────┘        └────────┬────────┘
-                 │                          │
-                 ▼                          ▼
-        ┌─────────────────┐        ┌─────────────────┐
-        │    Database     │        │  BSC Testnet    │
-        │ Dataset/Purchase│        │  DatasetMarket  │
-        │     Records     │        │ Smart Contract  │
-        └─────────────────┘        └─────────────────┘
-                 │                          │
-                 └────────────┬─────────────┘
-                              ▼
-                    ┌─────────────────────┐
-                    │ Entitlement /       │
-                    │ Access Verification │
-                    └─────────────────────┘
-🧪 Verified BSC Testnet Demonstration
+* Independently verifiable purchase state
+* Wallet-based identity
+* On-chain ownership/purchase state
+* Transparent transaction history
+* Decentralized payment
+
+**Backend provides:**
+
+* Marketplace records
+* Purchase synchronization
+* Database persistence
+* Entitlement verification
+* Access-control logic
+
+---
+
+# 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    U[User]
+
+    F[UniData Frontend<br/>React + Vite]
+    W[MetaMask]
+    B[FastAPI Backend]
+    DB[(Database)]
+    SC[DatasetMarket<br/>Smart Contract]
+    BC[BNB Smart Chain<br/>Testnet]
+    E[Entitlement &<br/>Access Verification]
+
+    U --> F
+    F --> W
+    F --> B
+
+    W --> SC
+    SC --> BC
+
+    B --> DB
+    B --> E
+
+    SC --> E
+    E --> F
+```
+
+### Architecture Components
+
+| Layer      | Technology                             | Responsibility                                    |
+| ---------- | -------------------------------------- | ------------------------------------------------- |
+| Frontend   | React + Vite + TypeScript              | Marketplace UI and user interaction               |
+| Web3       | MetaMask + ethers.js                   | Wallet connection and blockchain transactions     |
+| Backend    | Python + FastAPI                       | APIs, purchase synchronization and access control |
+| Database   | SQLAlchemy-based persistence           | Dataset and purchase records                      |
+| Blockchain | Solidity + Hardhat                     | Dataset registration and purchase verification    |
+| Network    | BNB Smart Chain Testnet                | Blockchain transaction execution                  |
+| AI/ML      | Dataset feasibility/readiness analysis | Dataset evaluation and ML-oriented assessment     |
+
+---
+
+# 🧪 Verified BSC Testnet Demonstration
 
 The current implementation has been tested end-to-end using a dedicated blockchain-backed dataset.
 
-Verified Flow
-Dataset registered on BSC Testnet
-Wallet connected through MetaMask
-Purchase initiated from the frontend
-Transaction confirmed on BSC Testnet
-Transaction hash recorded
-Backend purchase record created
-On-chain hasAddressPurchased() returns true
-Purchased state restored after refresh/reconnect
-Authorized wallet receives access
-Unauthorized wallet is rejected
-Smart Contract
+The verified flow includes:
 
-DatasetMarket
+* ✅ Dataset registered on BSC Testnet
+* ✅ Wallet connected through MetaMask
+* ✅ Purchase initiated from the frontend
+* ✅ Transaction confirmed on BSC Testnet
+* ✅ Transaction hash recorded
+* ✅ Backend purchase record created
+* ✅ On-chain `hasAddressPurchased()` verification returns `true`
+* ✅ Purchased state restored after refresh/reconnect
+* ✅ Authorized wallet receives access
+* ✅ Unauthorized wallet is rejected
 
+---
+
+# 📜 Smart Contract
+
+### DatasetMarket
+
+```text
+Contract Address:
 0x4Ccd91247B98df05dCF18aBd70F27367DFcd9da4
+```
 
-Network: BNB Smart Chain Testnet
+### Network Information
 
-Chain ID: 97
+```text
+Network:   BNB Smart Chain Testnet
+Chain ID:  97
+Currency:  tBNB
+```
 
-🛠️ Tech Stack
-Frontend
-React
-Vite
-TypeScript
-ethers.js
-MetaMask
-Web3 wallet integration
-Backend
-Python
-FastAPI
-SQLAlchemy
-REST APIs
-Blockchain service layer
-Blockchain
-Solidity
-Hardhat
-ethers.js
-BNB Smart Chain Testnet
-DatasetMarket smart contract
-Database
-SQLAlchemy-based persistence
-Dataset records
-Purchase records
-Blockchain dataset mapping
-AI/ML
-Dataset feasibility/readiness analysis
-ML-oriented dataset evaluation
-AI/ML workflow integration
-🎯 Why Blockchain?
+---
 
-UniData does not store the actual dataset files directly on the blockchain.
+# 🛠️ Tech Stack
 
-Instead, blockchain is used for the parts where verifiability matters:
+## Frontend
 
-Purchase verification
-Wallet-based identity
-On-chain ownership/purchase state
-Transparent transaction history
-Decentralized payment
+* React
+* Vite
+* TypeScript
+* ethers.js
+* MetaMask
+* Web3 wallet integration
+
+## Backend
+
+* Python
+* FastAPI
+* SQLAlchemy
+* REST APIs
+* Blockchain service layer
+
+## Blockchain
+
+* Solidity
+* Hardhat
+* ethers.js
+* BNB Smart Chain Testnet
+* DatasetMarket smart contract
+
+## Database
+
+* SQLAlchemy-based persistence
+* Dataset records
+* Purchase records
+* Blockchain dataset mapping
+
+## AI/ML
+
+* Dataset feasibility/readiness analysis
+* ML-oriented dataset evaluation
+* AI/ML workflow integration
+
+---
+
+# 🎯 Why Blockchain?
+
+UniData does **not** store the actual dataset files directly on the blockchain.
+
+Instead, blockchain is used for the parts where verifiability matters most:
+
+* Wallet-based identity
+* Purchase verification
+* On-chain ownership/purchase state
+* Transparent transaction history
+* Decentralized payment
 
 Large dataset files remain outside the blockchain.
 
-This hybrid architecture is more practical than attempting to store large datasets directly on-chain.
+This hybrid architecture is more practical than attempting to store large datasets directly on-chain while still providing users with verifiable purchase information.
 
-🔐 Security & Access-Control Model
+---
+
+# 🔐 Security & Access-Control Model
 
 A user's wallet address is associated with the blockchain purchase.
 
-The system verifies:
+The system verifies whether the wallet has purchased the requested dataset before granting access.
 
-Wallet
-   ↓
-Has the wallet purchased the dataset?
-   ↓
-YES ──→ Grant access
-   │
-NO  ──→ Reject access
+```text
+                    Wallet
+                       │
+                       ▼
+            ┌─────────────────────┐
+            │ Purchase Verification│
+            └──────────┬──────────┘
+                       │
+              Has wallet purchased?
+                    /       \
+                  YES        NO
+                   │          │
+                   ▼          ▼
+             Grant Access   Reject Access
+```
 
-Both blockchain state and backend purchase records participate in the verified purchase workflow.
+The verified purchase workflow combines:
 
-📊 Current Project Status
-✅ Completed
-Dataset marketplace UI
-Dataset detail pages
-Wallet connection
-MetaMask integration
-BSC Testnet integration
-Dataset blockchain mapping
-DatasetMarket integration
-tBNB purchase flow
-On-chain purchase verification
-Backend purchase synchronization
-Purchase record persistence
-Entitlement verification
-Unauthorized access rejection
-Purchased-state restoration after refresh/reconnect
-Production frontend build
-End-to-end BSC Testnet testing
-🔮 Future Scope
+1. Blockchain purchase state
+2. Transaction information
+3. Backend purchase records
+4. Wallet entitlement verification
 
-The architecture can be extended with:
+---
 
-BNB Greenfield integration
-IPFS-based decentralized dataset storage
-Automated royalty distribution
-Advanced dataset provenance
-Event indexing
-Production-grade authentication
-More sophisticated AI/ML pipelines
-Dataset versioning
-Contributor analytics
-Automated model-training workflows
-Mainnet deployment
+# 📊 Current Project Status
 
-These are extensions to the current implementation rather than requirements for the current BSC Testnet demonstration.
+## ✅ Completed
 
-👥 Team Responsibilities
-Blockchain / Backend
-System architecture
-FastAPI backend
-Database integration
-Smart contract integration
-BSC Testnet integration
-Purchase verification
-Backend synchronization
-Access-control logic
-Frontend / Web3 UI
-React marketplace
-Dataset pages
-MetaMask integration
-Purchase interface
-Wallet state
-Purchased/download UI
-AI/ML
-Dataset feasibility analysis
-ML-readiness evaluation
-AI/ML workflow demonstration
-Future model-training integration
-Product / Pitch
-Problem definition
-User journey
-Presentation
-Storytelling
-Future scope
-Product positioning
-📌 Project Vision
+* [x] Dataset marketplace UI
+* [x] Dataset detail pages
+* [x] Dataset metadata and status display
+* [x] Wallet connection
+* [x] MetaMask integration
+* [x] BNB Smart Chain Testnet integration
+* [x] Dataset-to-blockchain mapping
+* [x] DatasetMarket smart contract integration
+* [x] tBNB purchase flow
+* [x] On-chain purchase verification
+* [x] Backend purchase synchronization
+* [x] Purchase record persistence
+* [x] Entitlement verification
+* [x] Unauthorized access rejection
+* [x] Purchased-state restoration after refresh/reconnect
+* [x] Production frontend build
+* [x] End-to-end BSC Testnet testing
 
-UniData aims to become a trusted marketplace for datasets where contributors can monetize data and users can discover, evaluate, and obtain datasets with verifiable ownership and access.
+---
+
+# 🔮 Future Scope
+
+The current architecture can be extended with:
+
+* BNB Greenfield integration
+* IPFS-based decentralized dataset storage
+* Automated royalty distribution
+* Advanced dataset provenance
+* Event indexing
+* Production-grade authentication
+* More sophisticated AI/ML pipelines
+* Dataset versioning
+* Contributor analytics
+* Automated model-training workflows
+* BNB Smart Chain Mainnet deployment
+
+These are extensions to the current implementation and are **not requirements for the current BSC Testnet demonstration**.
+
+---
+
+# 👥 Team Responsibilities
+
+## Blockchain / Backend
+
+* System architecture
+* FastAPI backend
+* Database integration
+* Smart contract integration
+* BSC Testnet integration
+* Purchase verification
+* Backend synchronization
+* Access-control logic
+
+## Frontend / Web3 UI
+
+* React marketplace
+* Dataset pages
+* MetaMask integration
+* Purchase interface
+* Wallet state management
+* Purchased/download UI
+
+## AI/ML
+
+* Dataset feasibility analysis
+* ML-readiness evaluation
+* AI/ML workflow demonstration
+* Future model-training integration
+
+## Product / Pitch
+
+* Problem definition
+* User journey
+* Presentation
+* Storytelling
+* Future scope
+* Product positioning
+
+---
+
+# 📌 Project Vision
+
+UniData aims to become a trusted marketplace for datasets where contributors can monetize their data and users can discover, evaluate, purchase, and obtain datasets with verifiable ownership and controlled access.
 
 The long-term vision is to combine:
 
+```text
 AI + Data + Blockchain
+```
 
-into trusted infrastructure for the AI data economy.
+to build trusted infrastructure for the **AI data economy**.
 
-📄 License
+---
 
-This project is licensed under the MIT License.
+# 📄 License
+
+This project is licensed under the **MIT License**.

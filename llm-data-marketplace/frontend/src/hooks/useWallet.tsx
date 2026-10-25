@@ -2,6 +2,11 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { ethers } from 'ethers'
 import { apiClient } from '../api/client'
 
+export type TransactionRole = 'uploader' | 'buyer'
+
+export const UPLOADER_ACCOUNT = '0xCcfA277C946b8527DFF6d6A20e285A0E3401ADDe'
+export const BUYER_ACCOUNT = '0x6237E39Cb5D50285A944dfd0E9BAf32d4B0bDBa5'
+
 interface WalletContextType {
   account: string | null
   isConnected: boolean
@@ -13,11 +18,15 @@ interface WalletContextType {
   connect: () => Promise<void>
   disconnect: () => void
   switchToBNBTestnet: () => Promise<void>
-  // Multi-account support
+  // Multi-account and role support
   accounts: string[]
-  switchAccount: (address: string) => void
+  switchAccount: (address: string) => Promise<void>
   uploaderAccount: string
   buyerAccount: string
+  role: TransactionRole
+  isUploader: boolean
+  isBuyer: boolean
+  setRole: (role: TransactionRole) => Promise<void>
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -34,10 +43,6 @@ const BNB_TESTNET = {
   blockExplorerUrls: ['https://testnet.bscscan.com/'],
 }
 
-// Predefined accounts
-const UPLOADER_ACCOUNT = '0xA10C192c91b7b2712df3F98eDc0418C82b19771f'
-const BUYER_ACCOUNT = '0x9ed8454F21BE1Ec34cd17e6C6abdF9CD8EE2C6b9'
-
 export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [account, setAccount] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -46,18 +51,14 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [signer, setSigner] = useState<ethers.Signer | null>(null)
   const [balance, setBalance] = useState<string | null>(null)
   const [networkInfo, setNetworkInfo] = useState<any>(null)
-  const [accounts] = useState<string[]>([UPLOADER_ACCOUNT, BUYER_ACCOUNT])
+  const [accounts, setAccounts] = useState<string[]>([])
 
-  // Auto-connect with uploader account on mount
+  // Check if wallet is already connected via eth_accounts on mount
   useEffect(() => {
-    // Auto-connect with uploader account
-    setAccount(UPLOADER_ACCOUNT)
-    setIsConnected(true)
-    authenticateWithBackend(UPLOADER_ACCOUNT)
     checkIfWalletIsConnected()
   }, [])
 
-  // Listen for account changes
+  // Listen for MetaMask account and chain changes
   useEffect(() => {
     if (window.ethereum) {
       window.ethereum.on('accountsChanged', handleAccountsChanged)
@@ -72,8 +73,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const authenticateWithBackend = async (walletAddress: string) => {
     try {
-      // For now, we'll use a simple token based on the wallet address
-      // In a real app, you'd implement proper authentication
       const token = `mock_token_${walletAddress}`
       apiClient.setAuthToken(token)
       console.log('Authenticated with backend:', walletAddress)
@@ -88,38 +87,61 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }
 
-  const handleAccountsChanged = (accounts: string[]) => {
-    if (accounts.length === 0) {
+  const handleAccountsChanged = async (newAccounts: string[]) => {
+    if (!newAccounts || newAccounts.length === 0) {
       disconnect()
     } else {
-      setAccount(accounts[0])
+      setAccounts(newAccounts)
+      setAccount(newAccounts[0])
       setIsConnected(true)
-      authenticateWithBackend(accounts[0])
+      await authenticateWithBackend(newAccounts[0])
+      
+      if (window.ethereum) {
+        try {
+          const browserProvider = new ethers.BrowserProvider(window.ethereum)
+          const browserSigner = await browserProvider.getSigner()
+          setProvider(browserProvider)
+          setSigner(browserSigner)
+          const bal = await browserProvider.getBalance(newAccounts[0])
+          setBalance(ethers.formatEther(bal))
+          const network = await browserProvider.getNetwork()
+          setNetworkInfo(network)
+        } catch (e) {
+          console.error('Error updating provider on accountsChanged:', e)
+        }
+      }
     }
   }
 
   const checkIfWalletIsConnected = async () => {
     try {
       if (window.ethereum) {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-        if (accounts.length > 0) {
-          const provider = new ethers.BrowserProvider(window.ethereum)
-          const signer = await provider.getSigner()
+        const ethAccounts: string[] = await window.ethereum.request({ method: 'eth_accounts' })
+        if (ethAccounts && ethAccounts.length > 0) {
+          const browserProvider = new ethers.BrowserProvider(window.ethereum)
+          const browserSigner = await browserProvider.getSigner()
           
-          setProvider(provider)
-          setSigner(signer)
-          setAccount(accounts[0])
+          setProvider(browserProvider)
+          setSigner(browserSigner)
+          setAccounts(ethAccounts)
+          setAccount(ethAccounts[0])
           setIsConnected(true)
           
-          const balance = await provider.getBalance(accounts[0])
-          setBalance(ethers.formatEther(balance))
+          await authenticateWithBackend(ethAccounts[0])
           
-          const network = await provider.getNetwork()
+          const bal = await browserProvider.getBalance(ethAccounts[0])
+          setBalance(ethers.formatEther(bal))
+          
+          const network = await browserProvider.getNetwork()
           setNetworkInfo(network)
+        } else {
+          // Keep disconnected state if no accounts authorized
+          disconnect()
         }
       }
     } catch (error) {
       console.error('Error checking wallet connection:', error)
+      disconnect()
     }
   }
 
@@ -132,29 +154,32 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       setIsConnecting(true)
       
-      const accounts = await window.ethereum.request({
+      const reqAccounts: string[] = await window.ethereum.request({
         method: 'eth_requestAccounts',
       })
 
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      
-      setProvider(provider)
-      setSigner(signer)
-      setAccount(accounts[0])
-      setIsConnected(true)
-      
-      await authenticateWithBackend(accounts[0])
-      
-      const balance = await provider.getBalance(accounts[0])
-      setBalance(ethers.formatEther(balance))
-      
-      const network = await provider.getNetwork()
-      setNetworkInfo(network)
-      
-      // Switch to BNB testnet after connecting
-      if (network.chainId !== 97n) {
-        await switchToBNBTestnet()
+      if (reqAccounts && reqAccounts.length > 0) {
+        const browserProvider = new ethers.BrowserProvider(window.ethereum)
+        const browserSigner = await browserProvider.getSigner()
+        
+        setProvider(browserProvider)
+        setSigner(browserSigner)
+        setAccounts(reqAccounts)
+        setAccount(reqAccounts[0])
+        setIsConnected(true)
+        
+        await authenticateWithBackend(reqAccounts[0])
+        
+        const bal = await browserProvider.getBalance(reqAccounts[0])
+        setBalance(ethers.formatEther(bal))
+        
+        const network = await browserProvider.getNetwork()
+        setNetworkInfo(network)
+        
+        // Switch to BNB testnet after connecting
+        if (network.chainId !== 97n) {
+          await switchToBNBTestnet()
+        }
       }
     } catch (error) {
       console.error('Error connecting wallet:', error)
@@ -170,27 +195,41 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setSigner(null)
     setBalance(null)
     setNetworkInfo(null)
+    setAccounts([])
     apiClient.setAuthToken('')
   }
+
+  const uploaderAccount = accounts.find(a => a.toLowerCase() === UPLOADER_ACCOUNT.toLowerCase()) || (accounts.length > 1 ? accounts[0] : UPLOADER_ACCOUNT)
+  const buyerAccount = accounts.find(a => a.toLowerCase() === BUYER_ACCOUNT.toLowerCase()) || (accounts.length > 1 ? accounts[1] : BUYER_ACCOUNT)
+
+  const isUploader = Boolean(account && account.toLowerCase() === uploaderAccount.toLowerCase())
+  const isBuyer = !isUploader
+  const role: TransactionRole = isUploader ? 'uploader' : 'buyer'
 
   const switchAccount = async (address: string) => {
     setAccount(address)
     await authenticateWithBackend(address)
     
-    // Update balance if we have a provider
+    // Update balance and signer if we have a provider
     if (provider) {
       try {
-        const balance = await provider.getBalance(address)
-        setBalance(ethers.formatEther(balance))
+        const newSigner = await provider.getSigner(address)
+        setSigner(newSigner)
+      } catch (e) {
+        console.warn('Could not get signer for address directly:', e)
+      }
+      try {
+        const bal = await provider.getBalance(address)
+        setBalance(ethers.formatEther(bal))
       } catch (error) {
         console.error('Error getting balance for switched account:', error)
-        // Set a mock balance for predefined accounts
-        setBalance('10.0')
       }
-    } else {
-      // Set a mock balance for predefined accounts
-      setBalance('10.0')
     }
+  }
+
+  const setRole = async (targetRole: TransactionRole) => {
+    const targetAddress = targetRole === 'uploader' ? uploaderAccount : buyerAccount
+    await switchAccount(targetAddress)
   }
 
   const switchToBNBTestnet = async () => {
@@ -202,7 +241,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         params: [{ chainId: BNB_TESTNET.chainId }],
       })
     } catch (switchError: any) {
-      // This error code indicates that the chain has not been added to MetaMask
       if (switchError.code === 4902) {
         try {
           await window.ethereum.request({
@@ -231,8 +269,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     switchToBNBTestnet,
     accounts,
     switchAccount,
-    uploaderAccount: UPLOADER_ACCOUNT,
-    buyerAccount: BUYER_ACCOUNT,
+    uploaderAccount,
+    buyerAccount,
+    role,
+    isUploader,
+    isBuyer,
+    setRole,
   }
 
   return (

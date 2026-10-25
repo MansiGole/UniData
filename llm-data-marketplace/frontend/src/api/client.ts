@@ -1,5 +1,5 @@
 // Environment configuration
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin)
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://127.0.0.1:8000' : window.location.origin)
 
 // Backend interfaces - matching the actual API responses
 export interface Dataset {
@@ -24,6 +24,25 @@ export interface Dataset {
   blockchain_dataset_id?: number | null
   createdAt: number
   updatedAt: number
+}
+
+export interface DatasetPreviewResponse {
+  success: boolean
+  dataset_id: number
+  title: string
+  description?: string
+  author?: string
+  format: string
+  size?: string
+  license?: string
+  columns: string[]
+  rows: Record<string, any>[]
+  total_preview_rows: number
+  limit: number
+  truncated: boolean
+  total_rows?: number | null
+  message?: string
+  error?: string
 }
 
 export interface Model {
@@ -146,7 +165,16 @@ class ApiClient {
       
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
+        let cleanDetail = errorText
+        try {
+          const parsed = JSON.parse(errorText)
+          if (parsed && parsed.detail) {
+            cleanDetail = typeof parsed.detail === 'string' ? parsed.detail : JSON.stringify(parsed.detail)
+          }
+        } catch {
+          // Response body is not JSON, retain raw errorText
+        }
+        throw new Error(cleanDetail || `HTTP error! status: ${response.status}`)
       }
       
       return await response.json()
@@ -174,7 +202,17 @@ class ApiClient {
 
   // Dataset endpoints
   async getDatasets(): Promise<Dataset[]> {
-    return this.request<Dataset[]>('/api/v1/datasets/')
+    const response: any = await this.request<any>('/api/v1/datasets/?skip=0&limit=100&active_only=true')
+    if (Array.isArray(response)) {
+      return response
+    }
+    if (response && Array.isArray(response.data)) {
+      return response.data
+    }
+    if (response && Array.isArray(response.datasets)) {
+      return response.datasets
+    }
+    return []
   }
 
   async getDataset(id: string): Promise<{ success: boolean; data: Dataset }> {
@@ -220,6 +258,10 @@ class ApiClient {
       method: 'POST',
       body: formData,
     })
+  }
+
+  async getDatasetPreview(datasetId: string | number, limit: number = 15): Promise<DatasetPreviewResponse> {
+    return this.request<DatasetPreviewResponse>(`/api/v1/datasets/${datasetId}/preview?limit=${limit}`)
   }
 
   // Model endpoints
@@ -310,6 +352,8 @@ class ApiClient {
     dataset_id: number;
     title: string;
     file_url: string;
+    download_url?: string;
+    gateway_url?: string;
     download_granted: boolean;
     purchase_date: number;
     message: string;
@@ -320,11 +364,27 @@ class ApiClient {
       dataset_id: number;
       title: string;
       file_url: string;
+      download_url?: string;
+      gateway_url?: string;
       download_granted: boolean;
       purchase_date: number;
       message: string;
       instructions: string;
     }>(`/api/v1/download/dataset/${datasetId}`)
+  }
+
+  async downloadDatasetFile(datasetId: number): Promise<Blob> {
+    const url = `${this.baseUrl}/api/v1/download/dataset/${datasetId}/file`
+    const headers: Record<string, string> = {}
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`
+    }
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
+    }
+    return await response.blob()
   }
 
   async downloadModel(modelId: number): Promise<{

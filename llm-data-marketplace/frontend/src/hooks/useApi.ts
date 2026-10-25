@@ -282,3 +282,12 @@ export const useModelFeasibility = (modelId: string) => {
     staleTime: 10 * 60 * 1000, // 10 minutes
   })
 }
+
+export const useDatasetPreview = (datasetId: string | number, limit: number = 15) => {
+  return useQuery({
+    queryKey: ['dataset-preview', datasetId, limit],
+    queryFn: () => apiClient.getDatasetPreview(datasetId, limit),
+    enabled: !!datasetId,
+    staleTime: 60 * 1000,
+  })
+}

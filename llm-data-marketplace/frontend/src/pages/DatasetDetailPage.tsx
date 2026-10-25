@@ -19,15 +19,34 @@ import {
   Target,
   TrendingUp,
   Award,
-  Info
+  Info,
+  ShieldCheck,
+  ShoppingCart as ShoppingCartIcon,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Wallet
 } from 'lucide-react'
+import { apiClient } from '../api/client'
+import { DatasetPreviewModal } from '../components/DatasetPreviewModal'
 
 export const DatasetDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: dataset, isLoading, error } = useDataset(id!)
   const { data: feasibilityData } = useDatasetFeasibility(id!)
-  const { isConnected, account } = useWallet()
+  const { isConnected, account, balance, setRole, connect, isConnecting, isUploader } = useWallet()
+  const [isScoreExplainerOpen, setIsScoreExplainerOpen] = React.useState(false)
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState(false)
+
+  const handleContinueToPurchase = () => {
+    setIsPreviewOpen(false)
+    const purchaseEl = document.getElementById('purchase-section')
+    if (purchaseEl) {
+      purchaseEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
 
   if (isLoading) {
     return (
@@ -67,7 +86,23 @@ export const DatasetDetailPage: React.FC = () => {
     )
   }
 
-  const isOwner = account && account.toLowerCase() === dataset.owner.toLowerCase()
+  const isOwner = Boolean(account && dataset.owner && account.toLowerCase() === dataset.owner.toLowerCase())
+
+  const handleDownloadOwner = async () => {
+    try {
+      const blob = await apiClient.downloadDatasetFile(dataset.id)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `dataset_${dataset.id}_owner.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (e: any) {
+      alert(`Download failed: ${e.message || 'Unknown error'}`)
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -80,6 +115,57 @@ export const DatasetDetailPage: React.FC = () => {
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Datasets
       </Button>
+
+      {/* 2-Role Transaction Basis Indicator Banner */}
+      <div className={`mb-6 p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all ${
+        isUploader
+          ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
+          : 'bg-blue-950/30 border-blue-500/40 text-blue-200'
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${isUploader ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}>
+            {isUploader ? <ShieldCheck className="w-5 h-5" /> : <ShoppingCartIcon className="w-5 h-5" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm">
+                Active Transaction Role: {isUploader ? '👑 Uploader / Seller Role' : '🛒 Buyer Role'}
+              </span>
+              <span className="text-[11px] bg-white/10 px-2 py-0.5 rounded-full font-mono text-gray-300">
+                {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Not Connected'}
+              </span>
+            </div>
+            <div className="text-xs text-gray-300 mt-0.5">
+              {isUploader
+                ? 'You are in the uploader/seller role. Buyer transactions deposit 0.001 tBNB into your wallet.'
+                : 'You are browsing as a buyer. Purchasing will submit an on-chain transaction sending tBNB to the seller.'}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {isUploader ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setRole('buyer')}
+              className="border-blue-500/40 text-blue-300 hover:bg-blue-500/20 text-xs flex items-center gap-1.5"
+            >
+              <ShoppingCartIcon className="w-3.5 h-3.5" />
+              Switch to Buyer Role
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setRole('uploader')}
+              className="border-amber-500/40 text-amber-300 hover:bg-amber-500/20 text-xs flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Switch to Uploader Role
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Header with Feasibility Score */}
       <div className="mb-8">
@@ -331,6 +417,126 @@ export const DatasetDetailPage: React.FC = () => {
                     Analysis performed: {new Date(feasibilityData.feasibility_analysis.analysis_date).toLocaleDateString()}
                   </div>
                 )}
+
+                {/* Expandable Explanation: How is the Feasibility Score Calculated? */}
+                <div className="pt-2 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setIsScoreExplainerOpen(!isScoreExplainerOpen)}
+                    className="w-full flex items-center justify-between p-2.5 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors text-left group"
+                    aria-expanded={isScoreExplainerOpen}
+                  >
+                    <span className="flex items-center space-x-2 text-sm font-semibold text-foreground">
+                      <HelpCircle className="h-4 w-4 text-primary" />
+                      <span>How is the Feasibility Score Calculated?</span>
+                    </span>
+                    {isScoreExplainerOpen ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    )}
+                  </button>
+
+                  {isScoreExplainerOpen && (
+                    <div className="mt-3 p-4 rounded-lg bg-background border text-xs space-y-4">
+                      {/* What score out of 100 means */}
+                      <div>
+                        <h5 className="font-semibold text-foreground text-sm mb-1 flex items-center">
+                          <Target className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                          What the Score (0–100) Means
+                        </h5>
+                        <p className="text-muted-foreground leading-relaxed">
+                          The feasibility score is an automated health rating from <strong>0 to 100</strong> assessing technical dataset cleanliness, sample completeness, and readiness for machine learning workflows. Every dataset starts with a baseline score of <strong>100 points</strong>, with penalty deductions applied for structural defects and strengths highlighted for healthy properties.
+                        </p>
+                      </div>
+
+                      {/* Factors affecting score */}
+                      <div>
+                        <h5 className="font-semibold text-foreground text-sm mb-1.5 flex items-center">
+                          <BarChart3 className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                          Factors & Penalty Deductions
+                        </h5>
+                        <ul className="space-y-1.5 text-muted-foreground">
+                          <li className="flex items-start">
+                            <span className="font-medium text-foreground mr-1.5">• Missing Data:</span>
+                            <span>&gt;50% missing data triggers a <strong>-30 pt</strong> deduction; 20%–50% missing triggers <strong>-15 pts</strong>; &lt;5% is recorded as a key strength.</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="font-medium text-foreground mr-1.5">• Sample Volume:</span>
+                            <span>&lt;100 rows deducts <strong>-25 pts</strong> (critical sample deficit); 100–499 rows deducts <strong>-10 pts</strong>; &gt;1,000 rows indicates healthy sample size.</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="font-medium text-foreground mr-1.5">• Feature Count:</span>
+                            <span>&lt;3 features deducts <strong>-15 pts</strong> (insufficient signal); &gt;50 features deducts <strong>-5 pts</strong> (curse of dimensionality); 3–50 features is optimal.</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="font-medium text-foreground mr-1.5">• Duplicate Rows:</span>
+                            <span>&gt;10% duplicated rows deducts <strong>-10 pts</strong> due to redundancy and overfitting risk.</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="font-medium text-foreground mr-1.5">• Data Types:</span>
+                            <span>&gt;30% numeric columns reinforces numeric data quality for quantitative machine learning.</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Grade thresholds */}
+                      <div>
+                        <h5 className="font-semibold text-foreground text-sm mb-1.5 flex items-center">
+                          <Award className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                          Grade Thresholds
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-muted-foreground">
+                          <div className="p-2 rounded bg-muted/30 border">
+                            <span className="font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded text-[11px] mr-1.5">Grade A (≥ 90)</span>
+                            <span>Excellent quality; clean and ready for direct enterprise ML pipelines.</span>
+                          </div>
+                          <div className="p-2 rounded bg-muted/30 border">
+                            <span className="font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded text-[11px] mr-1.5">Grade B (80–89)</span>
+                            <span>Good quality; minor gaps or moderate sample size with solid foundations.</span>
+                          </div>
+                          <div className="p-2 rounded bg-muted/30 border">
+                            <span className="font-bold text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded text-[11px] mr-1.5">Grade C (70–79)</span>
+                            <span>Acceptable; viable for ML with light cleaning or imputation.</span>
+                          </div>
+                          <div className="p-2 rounded bg-muted/30 border">
+                            <span className="font-bold text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded text-[11px] mr-1.5">Grade D (60–69)</span>
+                            <span>Marginal; noticeable missing values or low row counts requiring curation.</span>
+                          </div>
+                          <div className="p-2 rounded bg-muted/30 border sm:col-span-2">
+                            <span className="font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded text-[11px] mr-1.5">Grade F (&lt; 60)</span>
+                            <span>Poor; severe data sparseness or structural corruption requiring extensive overhaul.</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ML-Readiness */}
+                      <div>
+                        <h5 className="font-semibold text-foreground text-sm mb-1 flex items-center">
+                          <CheckCircle className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                          What the "ML Ready" Label Means
+                        </h5>
+                        <p className="text-muted-foreground leading-relaxed">
+                          The analyzer sets <strong className="text-foreground">ML Ready</strong> if the score is <strong>≥ 70 (Grade C or above)</strong>. Datasets scoring 70+ have passed baseline structural, dimensional, and completeness checks. Scores below 70 are marked <strong className="text-foreground">Needs Work</strong>, indicating remediation is necessary before training algorithms.
+                        </p>
+                      </div>
+
+                      {/* Holistic Review & Disclaimer */}
+                      <div className="p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 text-amber-900 space-y-1.5">
+                        <div className="font-semibold flex items-center text-xs text-amber-950">
+                          <AlertCircle className="h-4 w-4 mr-1.5 text-amber-600 shrink-0" />
+                          Review Strengths, Issues & Disclaimer
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-amber-800">
+                          A single summary score cannot convey every nuance of your specific modeling goals. Always inspect the specific <strong>Strengths</strong>, <strong>Areas for Improvement</strong>, and <strong>Recommended Use Cases</strong> above.
+                        </p>
+                        <p className="text-[11px] leading-relaxed text-amber-800">
+                          <strong>Disclaimer:</strong> The feasibility score estimates dataset hygiene, integrity, and technical suitability—it <strong>does not guarantee downstream model accuracy</strong> or predictive success.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -360,7 +566,7 @@ export const DatasetDetailPage: React.FC = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Purchase Card */}
-          <Card className="border-2 border-primary/20">
+          <Card id="purchase-section" className="border-2 border-primary/20">
             <CardHeader>
               <CardTitle className="text-center">
                 <div className="text-3xl font-bold text-primary mb-2">
@@ -372,31 +578,92 @@ export const DatasetDetailPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Preview Dataset Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsPreviewOpen(true)}
+                className="w-full flex items-center justify-center gap-2 border-primary/40 hover:bg-primary/5 text-primary font-medium"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Preview Dataset</span>
+              </Button>
               {!isConnected ? (
-                <div className="text-center">
-                  <p className="text-muted-foreground mb-4">
+                <div className="text-center py-2 space-y-3">
+                  <p className="text-muted-foreground text-sm">
                     Connect your wallet to purchase this dataset
                   </p>
+                  <Button 
+                    onClick={connect} 
+                    disabled={isConnecting}
+                    className="w-full flex items-center justify-center gap-2 font-medium shadow-md"
+                    style={{ backgroundColor: '#F0B90B', color: '#0B0E11' }}
+                  >
+                    <Wallet className="w-4 h-4" />
+                    <span>{isConnecting ? 'Connecting...' : 'Connect Wallet'}</span>
+                  </Button>
                 </div>
-              ) : isOwner ? (
-                <div className="text-center">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                  <p className="font-semibold text-green-600">
-                    You own this dataset
-                  </p>
+              ) : (isUploader && isOwner) ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-center">
+                    <CheckCircle className="h-8 w-8 text-amber-400 mx-auto mb-1.5" />
+                    <p className="font-semibold text-amber-300 text-sm">
+                      You own this dataset
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Uploader / Seller Role (Direct Access)
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handleDownloadOwner}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download File (Owner)
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRole('buyer')}
+                    className="w-full text-xs border-blue-500/40 text-blue-300 hover:bg-blue-500/20 flex items-center justify-center gap-1.5"
+                  >
+                    <ShoppingCartIcon className="w-3.5 h-3.5" />
+                    Switch to Buyer Role (to test buying)
+                  </Button>
+
+                  <div className="text-[11px] text-gray-400 text-center">
+                    Payments from buyers are deposited into this wallet on BSC Testnet.
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
+                  <div className="text-xs bg-blue-500/10 border border-blue-500/20 text-blue-300 p-2 rounded text-center">
+                    Connected as Buyer: <span className="font-mono">{account ? `${account.slice(0, 6)}...${account.slice(-4)}` : ''}</span>
+                  </div>
+
                   <PurchaseButton
                     type="dataset"
                     itemId={dataset.id}
                     price={dataset.price}
+                    userBalance={balance ? parseFloat(balance) : 0}
                     itemTitle={dataset.title}
                     blockchainDatasetId={dataset.blockchain_dataset_id}
                     datasetObj={dataset}
                     className="w-full"
                   />
                   
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRole('uploader')}
+                    className="w-full text-xs text-amber-400 hover:bg-amber-500/10 flex items-center justify-center gap-1.5"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Switch to Uploader Role
+                  </Button>
+
                   <div className="text-xs text-muted-foreground text-center">
                     <p>✓ Instant delivery after payment</p>
                     <p>✓ Secure blockchain transaction</p>
@@ -447,6 +714,15 @@ export const DatasetDetailPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Dataset Preview Modal */}
+      <DatasetPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        onContinueToPurchase={handleContinueToPurchase}
+        dataset={dataset}
+        feasibility={feasibilityData?.feasibility_analysis}
+      />
     </div>
   )
 }

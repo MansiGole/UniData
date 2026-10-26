@@ -4,13 +4,11 @@ A decentralized marketplace for buying and selling datasets and AI models using 
 
 ## Live Demo
 
-```
+- **Frontend (Vercel):** [https://uni-data-yhje.vercel.app/](https://uni-data-yhje.vercel.app/)
+- **Backend API (Render):** [https://unidata-backend.onrender.com](https://unidata-backend.onrender.com)
+- **API Documentation (Swagger):** [https://unidata-backend.onrender.com/docs](https://unidata-backend.onrender.com/docs)
 
-- Frontend (Vercel): [Add your Vercel deployment URL here]
-- Backend API (Render): https://unidata-backend.onrender.com
--API Documentation (Swagger): https://unidata-backend.onrender.com/docs
 
-```
 
 ## Project Structure
 

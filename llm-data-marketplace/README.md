@@ -2,6 +2,16 @@
 
 A decentralized marketplace for buying and selling datasets and AI models using blockchain technology.
 
+## Live Demo
+
+```
+
+- Frontend (Vercel): [Add your Vercel deployment URL here]
+- Backend API (Render): https://unidata-backend.onrender.com
+-API Documentation (Swagger): https://unidata-backend.onrender.com/docs
+
+```
+
 ## Project Structure
 
 ```
